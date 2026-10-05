@@ -834,7 +834,9 @@ PlayerSettings:
   webWasm2023: 0
   webEnableSubmoduleStrippingCompatibility: 0
   scriptingDefineSymbols:
-    Standalone: SENTIS_ANALYTICS_ENABLED;APP_UI_EDITOR_ONLY
+    Android: CROSS_PLATFORM_INPUT;MOBILE_INPUT
+    Standalone: SENTIS_ANALYTICS_ENABLED;APP_UI_EDITOR_ONLY;CROSS_PLATFORM_INPUT
+    iPhone: CROSS_PLATFORM_INPUT;MOBILE_INPUT
   additionalCompilerArguments: {}
   platformArchitecture: {}
   scriptingBackend:
@@ -946,7 +948,7 @@ PlayerSettings:
   qnxGraphicConfPath: 
   apiCompatibilityLevel: 6
   captureStartupLogs: {}
-  activeInputHandler: 1
+  activeInputHandler: 2
   windowsGamepadBackendHint: 0
   enableDirectStorage: 0
   cloudProjectId: 23b7aa81-9bea-4a5a-a1d5-ff15b61880e6

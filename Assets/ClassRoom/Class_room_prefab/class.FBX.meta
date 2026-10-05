@@ -1,0 +1,176 @@
+fileFormatVersion: 2
+guid: e42a1750ce6b6124a9aa35b43fe1f7a5
+timeCreated: 1496096229
+licenseType: Pro
+ModelImporter:
+  serializedVersion: 19
+  fileIDToRecycleName:
+    100000: Armario
+    100002: //RootNode
+    100004: desk
+    100006: Gaveta1
+    100008: Gaveta2
+    100010: Gaveta3
+    100012: Janela_1_Direita
+    100014: Janela_1_Esquerda
+    100016: Janela_2_Direita
+    100018: Janela_2_Esquerda
+    100020: Light
+    100022: Mesa_aluno
+    100024: Porta1
+    100026: Porta2
+    100028: Quadro
+    100030: Quadro_negro
+    100032: Quadro_Parede
+    100034: Quadro_recados
+    100036: Sala
+    100038: swivel-chair
+    400000: Armario
+    400002: //RootNode
+    400004: desk
+    400006: Gaveta1
+    400008: Gaveta2
+    400010: Gaveta3
+    400012: Janela_1_Direita
+    400014: Janela_1_Esquerda
+    400016: Janela_2_Direita
+    400018: Janela_2_Esquerda
+    400020: Light
+    400022: Mesa_aluno
+    400024: Porta1
+    400026: Porta2
+    400028: Quadro
+    400030: Quadro_negro
+    400032: Quadro_Parede
+    400034: Quadro_recados
+    400036: Sala
+    400038: swivel-chair
+    2300000: Armario
+    2300002: desk
+    2300004: Gaveta1
+    2300006: Gaveta2
+    2300008: Gaveta3
+    2300010: Janela_1_Direita
+    2300012: Janela_1_Esquerda
+    2300014: Janela_2_Direita
+    2300016: Janela_2_Esquerda
+    2300018: Light
+    2300020: Mesa_aluno
+    2300022: Porta1
+    2300024: Porta2
+    2300026: Quadro
+    2300028: Quadro_negro
+    2300030: Quadro_Parede
+    2300032: Quadro_recados
+    2300034: Sala
+    2300036: swivel-chair
+    3300000: Armario
+    3300002: desk
+    3300004: Gaveta1
+    3300006: Gaveta2
+    3300008: Gaveta3
+    3300010: Janela_1_Direita
+    3300012: Janela_1_Esquerda
+    3300014: Janela_2_Direita
+    3300016: Janela_2_Esquerda
+    3300018: Light
+    3300020: Mesa_aluno
+    3300022: Porta1
+    3300024: Porta2
+    3300026: Quadro
+    3300028: Quadro_negro
+    3300030: Quadro_Parede
+    3300032: Quadro_recados
+    3300034: Sala
+    3300036: swivel-chair
+    4300000: Mesa_aluno
+    4300002: Quadro_negro
+    4300004: Janela_2_Direita
+    4300006: Janela_1_Esquerda
+    4300008: Quadro_Parede
+    4300010: Janela_2_Esquerda
+    4300012: Quadro
+    4300014: Janela_1_Direita
+    4300016: desk
+    4300018: swivel-chair
+    4300020: Quadro_recados
+    4300022: Sala
+    4300024: Porta1
+    4300026: Porta2
+    4300028: Armario
+    4300030: Gaveta1
+    4300032: Gaveta2
+    4300034: Gaveta3
+    4300036: Light
+    7400000: Take 001
+    9500000: //RootNode
+  materials:
+    importMaterials: 1
+    materialName: 0
+    materialSearch: 1
+  animations:
+    legacyGenerateAnimations: 4
+    bakeSimulation: 0
+    resampleCurves: 1
+    optimizeGameObjects: 0
+    motionNodeName: 
+    rigImportErrors: 
+    rigImportWarnings: 
+    animationImportErrors: 
+    animationImportWarnings: 
+    animationRetargetingWarnings: 
+    animationDoRetargetingWarnings: 0
+    animationCompression: 1
+    animationRotationError: 0.5
+    animationPositionError: 0.5
+    animationScaleError: 0.5
+    animationWrapMode: 0
+    extraExposedTransformPaths: []
+    clipAnimations: []
+    isReadable: 1
+  meshes:
+    lODScreenPercentages: []
+    globalScale: 1
+    meshCompression: 0
+    addColliders: 0
+    importBlendShapes: 1
+    swapUVChannels: 0
+    generateSecondaryUV: 0
+    useFileUnits: 1
+    optimizeMeshForGPU: 1
+    keepQuads: 0
+    weldVertices: 1
+    secondaryUVAngleDistortion: 8
+    secondaryUVAreaDistortion: 15.000001
+    secondaryUVHardAngle: 88
+    secondaryUVPackMargin: 4
+    useFileScale: 1
+  tangentSpace:
+    normalSmoothAngle: 60
+    normalImportMode: 0
+    tangentImportMode: 3
+  importAnimation: 1
+  copyAvatar: 0
+  humanDescription:
+    serializedVersion: 2
+    human: []
+    skeleton: []
+    armTwist: 0.5
+    foreArmTwist: 0.5
+    upperLegTwist: 0.5
+    legTwist: 0.5
+    armStretch: 0.05
+    legStretch: 0.05
+    feetSpacing: 0
+    rootMotionBoneName: 
+    rootMotionBoneRotation: {x: 0, y: 0, z: 0, w: 1}
+    hasTranslationDoF: 0
+    hasExtraRoot: 0
+    skeletonHasParents: 1
+  lastHumanDescriptionAvatarSource: {instanceID: 0}
+  animationType: 2
+  humanoidOversampling: 1
+  additionalBone: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
