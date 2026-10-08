@@ -2582,7 +2582,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerController
   controller: {fileID: 0}
   animator: {fileID: 0}
-  cameraTransform: {fileID: 0}
+  cameraTransform: {fileID: 1568823581}
   walkSpeed: 3
   runSpeed: 6
   crouchSpeed: 2
@@ -2591,6 +2591,8 @@ MonoBehaviour:
   jumpHeight: 1.2
   gravity: -9.81
   fallMultiplier: 2.5
+  chargeThreshold: 0.45
+  comboResetTime: 0.3
 --- !u!1 &756484934
 GameObject:
   m_ObjectHideFlags: 0
