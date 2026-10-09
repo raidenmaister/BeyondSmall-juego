@@ -931,7 +931,13 @@ PlayerSettings:
   XboxOneXTitleMemory: 8
   XboxOneOverrideIdentityName: 
   XboxOneOverrideIdentityPublisher: 
-  cloudServicesEnabled: {}
+  cloudServicesEnabled:
+    Build: 0
+    Game Performance: 0
+    Legacy Analytics: 0
+    Purchasing: 0
+    UDP: 0
+    Unity Ads: 0
   luminIcon:
     m_Name: 
     m_ModelFolderPath: 
@@ -954,11 +960,11 @@ PlayerSettings:
   activeInputHandler: 2
   windowsGamepadBackendHint: 0
   enableDirectStorage: 0
-  cloudProjectId: 23b7aa81-9bea-4a5a-a1d5-ff15b61880e6
+  cloudProjectId: c23f74ec-28ac-46cb-9d5a-68af6c1076ef
   framebufferDepthMemorylessMode: 0
   qualitySettingsNames: []
   projectName: BeyondSmall-juego
-  organizationId: joniconafe047
+  organizationId: axxli6033
   cloudEnabled: 0
   legacyClampBlendShapeWeights: 0
   hmiLoadingImage: {fileID: 0}
