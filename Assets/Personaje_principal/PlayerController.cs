@@ -29,6 +29,10 @@ public class PlayerController : MonoBehaviour
     [Header("Combate y Combo")]
     public float chargeThreshold = 0.35f;
     public float comboResetTime = 0.8f; // Tiempo sin cliquear para reiniciar combo a Golpe 1
+    public float attackRange = 1.8f; // Rango cuerpo a cuerpo realista (1.8m de alcance)
+    public float attackDamage = 20f; // Daño al golpear (5 golpes para derrotar a la rata de 100 PV)
+    public float staminaCostPerHit = 30f; // Coste de stamina por golpe
+    public PlayerStamina playerStamina;
 
     private int comboStep = 0; // 0 = Siguiente es Golpe 1, 1 = Siguiente es Golpe 2
     private bool isAttacking = false;
@@ -47,6 +51,11 @@ public class PlayerController : MonoBehaviour
         {
             originalHeight = controller.height;
             originalCenter = controller.center;
+        }
+
+        if (playerStamina == null)
+        {
+            playerStamina = GetComponent<PlayerStamina>();
         }
 
         Cursor.lockState = CursorLockMode.Locked;
@@ -190,7 +199,10 @@ public class PlayerController : MonoBehaviour
             if (hasQueuedNextCombo)
             {
                 hasQueuedNextCombo = false;
-                ExecuteNextComboStep();
+                if (playerStamina == null || playerStamina.TryConsumeStamina(staminaCostPerHit))
+                {
+                    ExecuteNextComboStep();
+                }
             }
         }
     }
@@ -206,7 +218,17 @@ public class PlayerController : MonoBehaviour
 
             if (isAttacking)
             {
-                hasQueuedNextCombo = true;
+                if (playerStamina == null || playerStamina.HasEnoughStamina(staminaCostPerHit))
+                {
+                    hasQueuedNextCombo = true;
+                }
+            }
+            else
+            {
+                if (playerStamina == null || playerStamina.TryConsumeStamina(staminaCostPerHit))
+                {
+                    ExecuteNextComboStep();
+                }
             }
         }
 
@@ -215,27 +237,32 @@ public class PlayerController : MonoBehaviour
         {
             if (Time.time - clickDownTime >= chargeThreshold)
             {
+                if (playerStamina != null && !playerStamina.HasEnoughStamina(staminaCostPerHit))
+                {
+                    // No hay suficiente stamina para golpear
+                    return;
+                }
+
+                if (playerStamina != null)
+                {
+                    playerStamina.ConsumeStamina(staminaCostPerHit);
+                }
+
                 ClearAnimatorTriggers();
                 animator.SetTrigger("HeavyAttack");
                 hasChargedAttackFired = true;
                 isAttacking = true;
+                PerformAttackHit();
                 ResetCombo();
             }
         }
 
-        // Golpe Ligero (soltar clic)
+        // Golpe Ligero en cola si se soltó el clic
         if (Input.GetMouseButtonUp(0))
         {
-            if (!hasChargedAttackFired && (Time.time - clickDownTime < chargeThreshold))
+            if (!hasChargedAttackFired && isAttacking && (Time.time - clickDownTime < chargeThreshold))
             {
-                if (!isAttacking)
-                {
-                    ExecuteNextComboStep();
-                }
-                else
-                {
-                    hasQueuedNextCombo = true;
-                }
+                hasQueuedNextCombo = true;
             }
         }
     }
@@ -254,6 +281,81 @@ public class PlayerController : MonoBehaviour
         {
             animator.SetTrigger("Attack2");
             comboStep = 0; // Siguiente clic regresará a Golpe 1
+        }
+
+        PerformAttackHit();
+    }
+
+    void PerformAttackHit()
+    {
+        // 1. Detección física en esfera frontal cerrada frente a los puños del jugador
+        Vector3 hitCenter = transform.position + transform.forward * 1.0f + Vector3.up * 0.8f;
+        Collider[] hits = Physics.OverlapSphere(hitCenter, attackRange);
+
+        bool hitFound = false;
+        foreach (var hit in hits)
+        {
+            if (hit.gameObject == gameObject) continue;
+
+            var ratHealth = hit.GetComponentInParent<RatHealth>();
+            if (ratHealth != null && !ratHealth.IsDead)
+            {
+                // Verificar que el impacto esté dentro de un cono frontal de 70 grados
+                Vector3 toTarget = hit.bounds.center - transform.position;
+                toTarget.y = 0f;
+                if (toTarget.sqrMagnitude > 0.001f && Vector3.Angle(transform.forward, toTarget.normalized) <= 70f)
+                {
+                    ApplyHitToRat(ratHealth);
+                    hitFound = true;
+                    break;
+                }
+            }
+        }
+
+        // 2. Respaldo directo estricto por proximidad (únicamente si la rata está a distancia cuerpo a cuerpo <= 2.2m)
+        if (!hitFound)
+        {
+            var allRats = Object.FindObjectsByType<RatHealth>(FindObjectsInactive.Exclude);
+            foreach (var ratHealth in allRats)
+            {
+                if (ratHealth.IsDead) continue;
+
+                // Medir distancia al punto más cercano de la rata (cabeza/trompa o cuerpo)
+                Vector3 targetPoint = ratHealth.transform.position;
+                var ratAI = ratHealth.GetComponent<RatAI>();
+                if (ratAI != null && ratAI.snoutTransform != null)
+                {
+                    targetPoint = ratAI.snoutTransform.position;
+                }
+
+                Vector3 toPoint = targetPoint - transform.position;
+                toPoint.y = 0f;
+                float horizontalDistance = toPoint.magnitude;
+
+                // Alcance máximo cuerpo a cuerpo estricto: 2.2 metros
+                if (horizontalDistance <= 2.2f)
+                {
+                    float angle = Vector3.Angle(transform.forward, toPoint.normalized);
+                    if (angle <= 70f) // Frente a la vista del jugador
+                    {
+                        ApplyHitToRat(ratHealth);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    private void ApplyHitToRat(RatHealth ratHealth)
+    {
+        ratHealth.TakeDamage(attackDamage);
+
+        var ratAI = ratHealth.GetComponent<RatAI>();
+        if (ratAI != null)
+        {
+            Vector3 knockbackDir = (ratHealth.transform.position - transform.position).normalized;
+            knockbackDir.y = 0f;
+            ratAI.TakeHit(knockbackDir);
         }
     }
 
