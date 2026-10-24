@@ -34,6 +34,9 @@ public class PlayerController : MonoBehaviour
     public float staminaCostPerHit = 30f; // Coste de stamina por golpe
     public PlayerStamina playerStamina;
 
+    [Header("Inventario")]
+    private bool isInventoryOpen = false; // Estado actual del inventario
+
     private int comboStep = 0; // 0 = Siguiente es Golpe 1, 1 = Siguiente es Golpe 2
     private bool isAttacking = false;
     private bool hasQueuedNextCombo = false;
@@ -64,6 +67,16 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
+        // Gestionar la apertura y cierre del inventario con la tecla I
+        HandleInventoryInput();
+
+        // Si el inventario está abierto, podemos bloquear el movimiento del jugador (opcional pero recomendado)
+        if (isInventoryOpen)
+        {
+            if (animator != null) animator.SetFloat("Speed", 0f);
+            return; 
+        }
+
         isGrounded = controller.isGrounded;
         if (animator != null) animator.SetBool("IsGrounded", isGrounded);
 
@@ -150,6 +163,31 @@ public class PlayerController : MonoBehaviour
         }
 
         controller.Move(velocity * Time.deltaTime);
+    }
+
+    void HandleInventoryInput()
+    {
+        if (Input.GetKeyDown(KeyCode.I))
+        {
+            isInventoryOpen = !isInventoryOpen; // Alterna el estado (true/false)
+
+            if (animator != null)
+            {
+                animator.SetBool("IsOpen", isInventoryOpen);
+            }
+
+            // Manejo del cursor para poder interactuar con los elementos del inventario
+            if (isInventoryOpen)
+            {
+                Cursor.lockState = CursorLockMode.None;
+                Cursor.visible = true;
+            }
+            else
+            {
+                Cursor.lockState = CursorLockMode.Locked;
+                Cursor.visible = false;
+            }
+        }
     }
 
     void CheckActionStatus()
