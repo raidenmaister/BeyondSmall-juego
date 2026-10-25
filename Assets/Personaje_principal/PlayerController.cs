@@ -395,6 +395,14 @@ public class PlayerController : MonoBehaviour
             knockbackDir.y = 0f;
             ratAI.TakeHit(knockbackDir);
         }
+
+        var spiderAI = ratHealth.GetComponent<SpiderAI>();
+        if (spiderAI != null)
+        {
+            Vector3 knockbackDir = (ratHealth.transform.position - transform.position).normalized;
+            knockbackDir.y = 0f;
+            spiderAI.TakeHit(knockbackDir);
+        }
     }
 
     void HandleBlockInput()

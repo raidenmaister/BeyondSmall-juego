@@ -39,6 +39,9 @@ public class FloorItemPromptManager : MonoBehaviour
         public GameObject root;
         public CanvasGroup canvasGroup;
         public RectTransform rectTransform;
+        public UnityEngine.UI.Image progressWheel;
+        public UnityEngine.UI.Image progressTrack;
+        public TextMeshProUGUI letterText;
         public TrackedItem currentItem;
         public float currentAlpha;
         public float targetAlpha;
@@ -63,6 +66,16 @@ public class FloorItemPromptManager : MonoBehaviour
     [Tooltip("Altura en metros por encima del objeto a la que flota la letra E.")]
     public float floatHeightOffset = 0.45f;
 
+    [Header("Configuración de Recolección (Hold E)")]
+    [Tooltip("Tiempo en segundos que se debe mantener presionada la tecla E para recoger el objeto.")]
+    public float holdDuration = 1.0f;
+
+    [Tooltip("Color de la rueda al irse rellenando.")]
+    public Color progressWheelColor = new Color(1.0f, 0.84f, 0.0f, 1.0f); // Dorado brillante
+
+    [Tooltip("Color del riel/fondo de la rueda.")]
+    public Color progressTrackColor = new Color(0.2f, 0.35f, 0.5f, 0.35f);
+
     [Header("Animación")]
     public float fadeSpeed = 10f;
     public float bobbingSpeed = 4f;
@@ -72,6 +85,9 @@ public class FloorItemPromptManager : MonoBehaviour
     [Tooltip("Sprite del fondo del prompt (si está vacío, se usa uno circular suave).")]
     public Sprite promptBackgroundSprite;
 
+    [Tooltip("Sprite de la rueda circular (si está vacío, se usa uno procedural antialiaseado).")]
+    public Sprite progressRingSprite;
+
     [Header("Objetos Tirados en el Piso")]
     [Tooltip("Lista de objetos monitoreados (se detectan automáticamente al inicio si está vacía).")]
     public List<GameObject> floorObjects = new List<GameObject>();
@@ -79,6 +95,13 @@ public class FloorItemPromptManager : MonoBehaviour
     private List<TrackedItem> trackedItems = new List<TrackedItem>();
     private List<PromptInstance> promptPool = new List<PromptInstance>();
     private static Sprite defaultCircleSprite;
+    private static Sprite defaultRingSprite;
+
+    private TrackedItem currentInteractingItem = null;
+    private float currentHoldTimer = 0f;
+    private bool hasCollectedThisPress = false;
+
+    public static FloorItemPromptManager Instance { get; private set; }
 
     public int TrackedCount => trackedItems.Count;
     public int ActivePromptCount
@@ -96,7 +119,34 @@ public class FloorItemPromptManager : MonoBehaviour
 
     private void Awake()
     {
+        if (Instance == null) Instance = this;
         EnsureInitialized();
+    }
+
+    public void RegisterTrackedItem(GameObject go)
+    {
+        if (go == null) return;
+        EnsureInitialized();
+
+        if (floorObjects == null) floorObjects = new List<GameObject>();
+        if (!floorObjects.Contains(go))
+        {
+            floorObjects.Add(go);
+        }
+
+        if (trackedItems == null) trackedItems = new List<TrackedItem>();
+        for (int i = 0; i < trackedItems.Count; i++)
+        {
+            if (trackedItems[i] != null && trackedItems[i].gameObject == go) return;
+        }
+
+        var item = new TrackedItem
+        {
+            gameObject = go,
+            renderers = go.GetComponentsInChildren<Renderer>()
+        };
+        item.UpdateBounds();
+        trackedItems.Add(item);
     }
 
     private void Start()
@@ -125,9 +175,19 @@ public class FloorItemPromptManager : MonoBehaviour
         EnsureInitialized();
         if (player == null) return;
 
+        // Si el inventario está abierto, no interactuar con objetos del piso
+        if (ControladorInventario.Instance != null && ControladorInventario.Instance.IsOpen)
+        {
+            ResetInteraction();
+            return;
+        }
+
         Vector3 playerPos = player.position;
 
         // 1. Evaluar proximidad con cada objeto del piso
+        TrackedItem closestNearItem = null;
+        float minDistance = float.MaxValue;
+
         for (int i = 0; i < trackedItems.Count; i++)
         {
             var item = trackedItems[i];
@@ -156,13 +216,177 @@ public class FloorItemPromptManager : MonoBehaviour
                     item.isNear = false;
                 }
             }
+
+            if (item.isNear && dist < minDistance)
+            {
+                minDistance = dist;
+                closestNearItem = item;
+            }
         }
 
-        // 2. Asignar prompts de la piscina a los objetos cercanos
+        // 2. Gestionar la interacción manteniendo pulsada la tecla E
+        HandleHoldInteraction(closestNearItem);
+
+        // 3. Asignar prompts de la piscina a los objetos cercanos
         UpdatePromptAssignments();
 
-        // 3. Animar, desvanecer y orientar los prompts activos
+        // 4. Animar, desvanecer y orientar los prompts activos
         UpdatePromptVisuals(Time.deltaTime);
+    }
+
+    private void HandleHoldInteraction(TrackedItem closestNearItem)
+    {
+        if (Input.GetKey(KeyCode.E))
+        {
+            if (!hasCollectedThisPress)
+            {
+                if (currentInteractingItem == null && closestNearItem != null)
+                {
+                    currentInteractingItem = closestNearItem;
+                    currentHoldTimer = 0f;
+                }
+
+                if (currentInteractingItem != null)
+                {
+                    // Validar que el item aún sea válido y esté cerca
+                    if (currentInteractingItem.gameObject == null || 
+                        !currentInteractingItem.gameObject.activeInHierarchy || 
+                        !currentInteractingItem.isNear)
+                    {
+                        ResetInteraction();
+                    }
+                    else
+                    {
+                        currentHoldTimer += Time.deltaTime;
+                        float progress = Mathf.Clamp01(currentHoldTimer / Mathf.Max(0.1f, holdDuration));
+
+                        UpdateInteractionWheel(currentInteractingItem, progress);
+
+                        // Si la rueda se llenó por completo
+                        if (currentHoldTimer >= holdDuration)
+                        {
+                            CollectItem(currentInteractingItem);
+                            hasCollectedThisPress = true;
+                            ResetInteraction();
+                        }
+                    }
+                }
+            }
+        }
+        else
+        {
+            hasCollectedThisPress = false;
+            if (currentInteractingItem != null)
+            {
+                ResetInteraction();
+            }
+        }
+    }
+
+    private void UpdateInteractionWheel(TrackedItem item, float progress)
+    {
+        for (int i = 0; i < promptPool.Count; i++)
+        {
+            var p = promptPool[i];
+            if (p.currentItem == item && p.progressWheel != null)
+            {
+                p.progressWheel.gameObject.SetActive(progress > 0f);
+                p.progressWheel.fillAmount = progress;
+                if (p.progressTrack != null)
+                {
+                    p.progressTrack.gameObject.SetActive(true);
+                }
+
+                // Ligera pulsación visual de escala mientras se rellena
+                float pulse = 1f + (progress * 0.15f);
+                p.rectTransform.localScale = new Vector3(0.007f * pulse, 0.007f * pulse, 0.007f * pulse);
+            }
+        }
+    }
+
+    private void ResetInteraction()
+    {
+        for (int i = 0; i < promptPool.Count; i++)
+        {
+            var p = promptPool[i];
+            if (p.progressWheel != null)
+            {
+                p.progressWheel.fillAmount = 0f;
+                p.progressWheel.gameObject.SetActive(false);
+            }
+            if (p.progressTrack != null)
+            {
+                p.progressTrack.gameObject.SetActive(false);
+            }
+            if (p.rectTransform != null)
+            {
+                p.rectTransform.localScale = new Vector3(0.007f, 0.007f, 0.007f);
+            }
+        }
+        currentInteractingItem = null;
+        currentHoldTimer = 0f;
+    }
+
+    private void CollectItem(TrackedItem item)
+    {
+        if (item == null || item.gameObject == null) return;
+
+        GameObject go = item.gameObject;
+
+        string itemId = null;
+        Sprite icon = null;
+        int qty = 1;
+
+        // Revisar si tiene componente WorldItem
+        var worldItem = go.GetComponent<WorldItem>();
+        if (worldItem != null)
+        {
+            itemId = worldItem.itemId;
+            icon = worldItem.itemIcon;
+            qty = worldItem.quantity;
+        }
+
+        if (string.IsNullOrEmpty(itemId))
+        {
+            itemId = ControladorInventario.NormalizeItemName(go.name);
+        }
+
+        if (icon == null && ControladorInventario.Instance != null)
+        {
+            icon = ControladorInventario.Instance.GetIconByName(itemId);
+        }
+
+        // Añadir al inventario
+        if (ControladorInventario.Instance != null)
+        {
+            ControladorInventario.Instance.AddItem(itemId, icon, qty);
+        }
+
+        // Desactivar/remover objeto del mundo
+        item.isNear = false;
+        go.SetActive(false);
+        trackedItems.Remove(item);
+        floorObjects.Remove(go);
+
+        // Desasignar y ocultar el prompt de inmediato
+        for (int i = 0; i < promptPool.Count; i++)
+        {
+            if (promptPool[i].currentItem == item)
+            {
+                promptPool[i].currentItem = null;
+                promptPool[i].targetAlpha = 0f;
+                promptPool[i].currentAlpha = 0f;
+                if (promptPool[i].canvasGroup != null) promptPool[i].canvasGroup.alpha = 0f;
+                if (promptPool[i].progressWheel != null)
+                {
+                    promptPool[i].progressWheel.fillAmount = 0f;
+                    promptPool[i].progressWheel.gameObject.SetActive(false);
+                }
+                if (promptPool[i].progressTrack != null) promptPool[i].progressTrack.gameObject.SetActive(false);
+                if (promptPool[i].rectTransform != null) promptPool[i].rectTransform.localScale = new Vector3(0.007f, 0.007f, 0.007f);
+                promptPool[i].root.SetActive(false);
+            }
+        }
     }
 
     private void LateUpdate()
@@ -186,7 +410,6 @@ public class FloorItemPromptManager : MonoBehaviour
     {
         trackedItems.Clear();
 
-        // Si no se asignaron manualmente en el inspector, buscar los 49 objetos del piso
         if (floorObjects == null || floorObjects.Count == 0)
         {
             floorObjects = new List<GameObject>();
@@ -198,6 +421,15 @@ public class FloorItemPromptManager : MonoBehaviour
                 {
                     floorObjects.Add(r);
                 }
+            }
+        }
+
+        // Cualquier objeto raíz con WorldItem (p. ej. los "nuevos items") también se puede recoger
+        foreach (var r in gameObject.scene.GetRootGameObjects())
+        {
+            if (r.GetComponent<WorldItem>() != null && !floorObjects.Contains(r))
+            {
+                floorObjects.Add(r);
             }
         }
 
@@ -238,33 +470,66 @@ public class FloorItemPromptManager : MonoBehaviour
         cg.interactable = false;
 
         var rt = go.GetComponent<RectTransform>();
-        rt.sizeDelta = new Vector2(80f, 80f);
-        rt.localScale = new Vector3(0.007f, 0.007f, 0.007f); // Tamaño ~0.56m en espacio de mundo
+        rt.sizeDelta = new Vector2(84f, 84f);
+        rt.localScale = new Vector3(0.007f, 0.007f, 0.007f);
 
-        // Fondo oscuro circular/redondeado
+        Sprite circleSprite = promptBackgroundSprite != null ? promptBackgroundSprite : GetDefaultCircleSprite();
+        Sprite ringSprite = progressRingSprite != null ? progressRingSprite : GetDefaultRingSprite();
+
+        // Fondo oscuro circular
         var bgGO = new GameObject("Background", typeof(RectTransform), typeof(CanvasRenderer), typeof(UnityEngine.UI.Image));
         bgGO.transform.SetParent(go.transform, false);
         var bgRT = bgGO.GetComponent<RectTransform>();
         bgRT.anchorMin = Vector2.zero;
         bgRT.anchorMax = Vector2.one;
-        bgRT.sizeDelta = Vector2.zero;
+        bgRT.sizeDelta = new Vector2(-4f, -4f);
 
         var bgImg = bgGO.GetComponent<UnityEngine.UI.Image>();
-        Sprite spriteToUse = promptBackgroundSprite != null ? promptBackgroundSprite : GetDefaultCircleSprite();
-        bgImg.sprite = spriteToUse;
+        bgImg.sprite = circleSprite;
         bgImg.color = new Color(0.08f, 0.10f, 0.15f, 0.92f); // Azul oscuro casi negro
 
-        // Borde fino brillante
+        // Riel o fondo de la rueda de progreso
+        var trackGO = new GameObject("ProgressTrack", typeof(RectTransform), typeof(CanvasRenderer), typeof(UnityEngine.UI.Image));
+        trackGO.transform.SetParent(go.transform, false);
+        var trackRT = trackGO.GetComponent<RectTransform>();
+        trackRT.anchorMin = Vector2.zero;
+        trackRT.anchorMax = Vector2.one;
+        trackRT.sizeDelta = Vector2.zero;
+
+        var trackImg = trackGO.GetComponent<UnityEngine.UI.Image>();
+        trackImg.sprite = ringSprite;
+        trackImg.color = progressTrackColor;
+        trackGO.SetActive(false);
+
+        // Rueda de progreso (Radial 360) que se va rellenando
+        var wheelGO = new GameObject("ProgressWheel", typeof(RectTransform), typeof(CanvasRenderer), typeof(UnityEngine.UI.Image));
+        wheelGO.transform.SetParent(go.transform, false);
+        var wheelRT = wheelGO.GetComponent<RectTransform>();
+        wheelRT.anchorMin = Vector2.zero;
+        wheelRT.anchorMax = Vector2.one;
+        wheelRT.sizeDelta = Vector2.zero;
+
+        var wheelImg = wheelGO.GetComponent<UnityEngine.UI.Image>();
+        wheelImg.sprite = ringSprite;
+        wheelImg.type = UnityEngine.UI.Image.Type.Filled;
+        wheelImg.fillMethod = UnityEngine.UI.Image.FillMethod.Radial360;
+        wheelImg.fillOrigin = (int)UnityEngine.UI.Image.Origin360.Top;
+        wheelImg.fillClockwise = true;
+        wheelImg.fillAmount = 0f;
+        wheelImg.color = progressWheelColor;
+        wheelGO.SetActive(false);
+
+        // Borde fino decorativo
         var borderGO = new GameObject("Border", typeof(RectTransform), typeof(CanvasRenderer), typeof(UnityEngine.UI.Image));
         borderGO.transform.SetParent(go.transform, false);
         var borderRT = borderGO.GetComponent<RectTransform>();
         borderRT.anchorMin = Vector2.zero;
         borderRT.anchorMax = Vector2.one;
-        borderRT.sizeDelta = new Vector2(-4f, -4f);
+        borderRT.sizeDelta = new Vector2(-6f, -6f);
 
         var borderImg = borderGO.GetComponent<UnityEngine.UI.Image>();
-        borderImg.sprite = spriteToUse;
-        borderImg.color = new Color(0.2f, 0.75f, 1.0f, 0.5f); // Borde azul cian suave
+        borderImg.sprite = circleSprite;
+        borderImg.color = new Color(0.2f, 0.75f, 1.0f, 0.35f); // Borde azul cian suave
 
         // Letra "E"
         var textGO = new GameObject("Letter_E", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
@@ -276,7 +541,7 @@ public class FloorItemPromptManager : MonoBehaviour
 
         var tmp = textGO.GetComponent<TextMeshProUGUI>();
         tmp.text = "E";
-        tmp.fontSize = 46f;
+        tmp.fontSize = 44f;
         tmp.fontStyle = FontStyles.Bold;
         tmp.alignment = TextAlignmentOptions.Center;
         tmp.color = Color.white;
@@ -288,6 +553,9 @@ public class FloorItemPromptManager : MonoBehaviour
             root = go,
             canvasGroup = cg,
             rectTransform = rt,
+            progressWheel = wheelImg,
+            progressTrack = trackImg,
+            letterText = tmp,
             currentItem = null,
             currentAlpha = 0f,
             targetAlpha = 0f,
@@ -318,6 +586,32 @@ public class FloorItemPromptManager : MonoBehaviour
         return defaultCircleSprite;
     }
 
+    private static Sprite GetDefaultRingSprite()
+    {
+        if (defaultRingSprite != null) return defaultRingSprite;
+
+        int size = 128;
+        var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        float center = size * 0.5f;
+        float outerRadius = 58f;
+        float innerRadius = 40f;
+
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                float dist = Vector2.Distance(new Vector2(x + 0.5f, y + 0.5f), new Vector2(center, center));
+                float alphaOuter = Mathf.Clamp01(outerRadius - dist + 0.75f);
+                float alphaInner = Mathf.Clamp01(dist - innerRadius + 0.75f);
+                float alpha = Mathf.Clamp01(Mathf.Min(alphaOuter, alphaInner));
+                tex.SetPixel(x, y, new Color(1f, 1f, 1f, alpha));
+            }
+        }
+        tex.Apply();
+        defaultRingSprite = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
+        return defaultRingSprite;
+    }
+
     private void UpdatePromptAssignments()
     {
         // 1. Desasignar prompts cuyos objetos ya no están cerca
@@ -329,9 +623,9 @@ public class FloorItemPromptManager : MonoBehaviour
                 if (!p.currentItem.isNear || p.currentItem.gameObject == null || !p.currentItem.gameObject.activeInHierarchy)
                 {
                     p.targetAlpha = 0f;
-                    // Cuando se desvanece por completo, se libera el item
                     if (p.currentAlpha <= 0.01f)
                     {
+                        if (p.progressWheel != null) p.progressWheel.fillAmount = 0f;
                         p.currentItem = null;
                         p.root.SetActive(false);
                     }
@@ -358,7 +652,6 @@ public class FloorItemPromptManager : MonoBehaviour
 
                 if (!alreadyAssigned)
                 {
-                    // Buscar un prompt libre en el pool
                     var freePrompt = GetFreePrompt();
                     if (freePrompt != null)
                     {
@@ -366,6 +659,7 @@ public class FloorItemPromptManager : MonoBehaviour
                         freePrompt.targetAlpha = 1f;
                         freePrompt.baseWorldY = item.topY + floatHeightOffset;
                         freePrompt.root.transform.position = new Vector3(item.lastVisualCenter.x, freePrompt.baseWorldY, item.lastVisualCenter.z);
+                        if (freePrompt.progressWheel != null) freePrompt.progressWheel.fillAmount = 0f;
                         freePrompt.root.SetActive(true);
                     }
                 }
@@ -394,23 +688,21 @@ public class FloorItemPromptManager : MonoBehaviour
             var p = promptPool[i];
             if (!p.root.activeSelf) continue;
 
-            // Fade in / Fade out
             p.currentAlpha = Mathf.MoveTowards(p.currentAlpha, p.targetAlpha, fadeSpeed * deltaTime);
             if (p.canvasGroup != null)
             {
                 p.canvasGroup.alpha = p.currentAlpha;
             }
 
-            // Actualizar posición flotante sobre el objeto
             if (p.currentItem != null)
             {
                 float targetY = p.currentItem.topY + floatHeightOffset + bobOffset;
                 p.root.transform.position = new Vector3(p.currentItem.lastVisualCenter.x, targetY, p.currentItem.lastVisualCenter.z);
             }
 
-            // Si terminó de desvanecerse y no tiene targetAlpha
             if (p.currentAlpha <= 0.001f && p.targetAlpha == 0f)
             {
+                if (p.progressWheel != null) p.progressWheel.fillAmount = 0f;
                 p.currentItem = null;
                 p.root.SetActive(false);
             }
@@ -431,3 +723,4 @@ public class FloorItemPromptManager : MonoBehaviour
         }
     }
 }
+

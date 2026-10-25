@@ -1,0 +1,14 @@
+Clip: HumanArmature|Spider_Attack loop=False
+Clip: HumanArmature|Spider_Death loop=False
+Clip: HumanArmature|Spider_Idle loop=True
+Clip: HumanArmature|Spider_Jump loop=False
+Clip: HumanArmature|Spider_Walk loop=True
+Material Material color=RGBA(0.253, 0.253, 0.253, 1.000)
+Material Material.001 color=RGBA(0.640, 0.171, 0.171, 1.000)
+Escala=0.219, bounds size=(1.30, 0.60, 1.11)
+Prefab creado: Assets/Spider/Spider_Enemy.prefab
+Escena activa: Class_rom_exemple
+Jugador=(-31.48, 0.00, -51.17) Rata=(-32.14, -0.10, -30.58)
+Salon bounds: Center: (0.59, 27.37, -5.73), Extents: (79.84, 27.43, 92.01)
+Posicion araña: (-25.75, -0.06, -44.23)
+Araña colocada y escena guardada.

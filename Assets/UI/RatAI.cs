@@ -71,12 +71,23 @@ public class RatAI : MonoBehaviour
     [Tooltip("El modelo 3D tiene la cabeza apuntando en -Z local. Si está activo, invierte la orientación para que la cabeza vaya de frente.")]
     public bool invertForward = true;
 
+    [Header("Muerte y Recompensas")]
+    [Tooltip("Prefab del efecto de partículas que aparece al morir.")]
+    public GameObject deathParticlesPrefab;
+
+    [Tooltip("Prefab de la carne a soltar (Assets/Prefabs/Carne_Drop.prefab o carne.fbx).")]
+    public GameObject meatPrefab;
+
+    [Tooltip("Tiempo de espera para la animación de muerte antes de desaparecer.")]
+    public float deathAnimationDuration = 0.75f;
+
     private Vector3 homePosition;
     private Quaternion homeRotation;
     private RatState currentState = RatState.Idle;
     private float chaseTimer = 0f;
     private float attackTimer = 0f;
     private bool wasHealthBarVisible = false;
+    private bool isDeadOrDying = false;
 
     // Variables de retroceso y recuperación
     private float hitRecoveryTimer = 0f;
@@ -136,6 +147,9 @@ public class RatAI : MonoBehaviour
 
     public void Die()
     {
+        if (isDeadOrDying) return;
+        isDeadOrDying = true;
+
         SetState(RatState.Dead);
         knockbackVelocity = Vector3.zero;
 
@@ -150,6 +164,177 @@ public class RatAI : MonoBehaviour
         if (col != null)
         {
             col.enabled = false;
+        }
+
+        StartCoroutine(DeathSequenceCoroutine());
+    }
+
+    private System.Collections.IEnumerator DeathSequenceCoroutine()
+    {
+        // Medir duración de la animación de muerte si está disponible en el animator
+        float waitDuration = deathAnimationDuration;
+        if (animator != null && animator.runtimeAnimatorController != null)
+        {
+            foreach (var clip in animator.runtimeAnimatorController.animationClips)
+            {
+                if (clip.name.IndexOf("death", System.StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    waitDuration = clip.length;
+                    break;
+                }
+            }
+        }
+
+        // Esperar a que concluya la animación de muerte
+        yield return new WaitForSeconds(waitDuration);
+
+        // Calcular posición del centro del cuerpo de la rata
+        Vector3 bodyCenter = transform.position;
+        var rends = GetComponentsInChildren<Renderer>();
+        if (rends != null && rends.Length > 0)
+        {
+            Bounds b = rends[0].bounds;
+            for (int i = 1; i < rends.Length; i++)
+            {
+                if (rends[i] != null) b.Encapsulate(rends[i].bounds);
+            }
+            bodyCenter = b.center;
+        }
+
+        // 1. Crear partículas de desaparición
+        SpawnDeathParticles(bodyCenter);
+
+        // Ocultar mallas de la rata de inmediato para que desaparezca visualmente en el estallido de partículas
+        if (rends != null)
+        {
+            foreach (var r in rends)
+            {
+                if (r != null) r.enabled = false;
+            }
+        }
+
+        // 2. Dejar caer carne en el suelo con las probabilidades: 3 (20%), 2 (30%), 1 (50%)
+        DropMeat(bodyCenter);
+
+        // Ocultar la barra de vida de la rata
+        if (healthBarUI != null)
+        {
+            healthBarUI.HideImmediate();
+        }
+
+        // Breve pausa para asegurar el cálculo inicial de físicas de la carne antes de destruir el objeto raíz
+        yield return new WaitForSeconds(0.15f);
+
+        Destroy(gameObject);
+    }
+
+    private void SpawnDeathParticles(Vector3 position)
+    {
+        GameObject prefab = deathParticlesPrefab;
+#if UNITY_EDITOR
+        if (prefab == null)
+        {
+            prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/RatDeathParticles.prefab");
+        }
+#endif
+        if (prefab != null)
+        {
+            Instantiate(prefab, position, Quaternion.identity);
+        }
+    }
+
+    private void DropMeat(Vector3 bodyCenter)
+    {
+        GameObject prefab = meatPrefab;
+#if UNITY_EDITOR
+        if (prefab == null)
+        {
+            prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Carne_Drop.prefab");
+            if (prefab == null)
+            {
+                prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/carne.fbx");
+            }
+        }
+#endif
+        if (prefab == null) return;
+
+        // Probabilidades:
+        // 3 carnes -> 20%
+        // 2 carnes -> 30%
+        // 1 carne  -> 50%
+        float roll = Random.Range(0f, 100f);
+        int meatCount = 1;
+        if (roll < 20f)
+        {
+            meatCount = 3; // 20% de probabilidad
+        }
+        else if (roll < 50f)
+        {
+            meatCount = 2; // 30% de probabilidad (20% a 50%)
+        }
+        else
+        {
+            meatCount = 1; // 50% de probabilidad (50% a 100%)
+        }
+
+        Debug.Log($"[RatAI] Rata eliminada. Roll: {roll:F1}%. Carne soltada: {meatCount}.");
+
+        // Encontrar punto de impacto en el suelo
+        Vector3 floorPos = bodyCenter;
+        RaycastHit hit;
+        if (Physics.Raycast(bodyCenter + Vector3.up * 1.0f, Vector3.down, out hit, 10f, ~0, QueryTriggerInteraction.Ignore))
+        {
+            floorPos = hit.point;
+        }
+
+        // Instanciar trozos de carne
+        for (int i = 0; i < meatCount; i++)
+        {
+            Vector3 offset = Vector3.zero;
+            if (meatCount == 2)
+            {
+                float angle = (i == 0 ? 0f : 180f) + Random.Range(-25f, 25f);
+                Vector3 dir = Quaternion.Euler(0f, angle, 0f) * Vector3.forward;
+                offset = dir * Random.Range(0.3f, 0.5f);
+            }
+            else if (meatCount == 3)
+            {
+                float angle = (i * 120f) + Random.Range(-20f, 20f);
+                Vector3 dir = Quaternion.Euler(0f, angle, 0f) * Vector3.forward;
+                offset = dir * Random.Range(0.35f, 0.6f);
+            }
+
+            Vector3 spawnPos = floorPos + offset + Vector3.up * 0.45f;
+            Quaternion spawnRot = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f);
+
+            GameObject meatObj = Instantiate(prefab, spawnPos, spawnRot);
+            meatObj.name = $"Carne_{i + 1}";
+
+            // Asegurar que tenga componente WorldItem para el inventario
+            var worldItem = meatObj.GetComponent<WorldItem>();
+            if (worldItem == null)
+            {
+                worldItem = meatObj.AddComponent<WorldItem>();
+                worldItem.itemId = "Carne";
+                worldItem.displayName = "Carne";
+                worldItem.quantity = 1;
+            }
+
+            // Impulso físico para dispersión suave y natural (con rotación mayormente en yaw para quedar plana en el suelo)
+            var rb = meatObj.GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                Vector3 impulseDir = (offset.sqrMagnitude > 0.001f ? offset.normalized : Random.onUnitSphere);
+                impulseDir.y = Mathf.Abs(impulseDir.y) * 0.5f + 0.8f;
+                rb.AddForce(impulseDir.normalized * Random.Range(0.8f, 1.4f), ForceMode.Impulse);
+                rb.AddTorque(new Vector3(Random.Range(-0.5f, 0.5f), Random.Range(-2f, 2f), Random.Range(-0.5f, 0.5f)), ForceMode.Impulse);
+            }
+
+            // Registrar con FloorItemPromptManager para que aparezca la letra 'E' al acercarse
+            if (FloorItemPromptManager.Instance != null)
+            {
+                FloorItemPromptManager.Instance.RegisterTrackedItem(meatObj);
+            }
         }
     }
 
@@ -188,9 +373,9 @@ public class RatAI : MonoBehaviour
     public void Update()
     {
         // Si la rata está muerta, no procesar IA ni movimiento, se queda tirada en el suelo
-        if (currentState == RatState.Dead || (ratHealth != null && ratHealth.IsDead))
+        if (isDeadOrDying || currentState == RatState.Dead || (ratHealth != null && ratHealth.IsDead))
         {
-            if (currentState != RatState.Dead)
+            if (!isDeadOrDying && currentState != RatState.Dead)
             {
                 Die();
             }
@@ -242,7 +427,7 @@ public class RatAI : MonoBehaviour
     public void TakeHit(Vector3 knockbackDirection)
     {
         // Si ya está muerta o se quedó sin vida, no procesar golpe
-        if (currentState == RatState.Dead || (ratHealth != null && ratHealth.IsDead))
+        if (isDeadOrDying || currentState == RatState.Dead || (ratHealth != null && ratHealth.IsDead))
         {
             return;
         }
