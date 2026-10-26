@@ -5,7 +5,7 @@ using TMPro;
 
 public class InventorySlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler, IDropHandler, IPointerClickHandler
 {
-    public enum SlotKind { Inventory, CraftInput, CraftResult }
+    public enum SlotKind { Inventory, CraftInput, CraftResult, Quick }
 
     [Header("Referencias UI")]
     [SerializeField] private Image itemIcon;
@@ -222,6 +222,15 @@ public class InventorySlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, I
         if (eventData.button == PointerEventData.InputButton.Right && kind == SlotKind.CraftInput && !IsEmpty)
         {
             ReturnToInventory();
+        }
+        // Clic derecho sobre un slot de acceso rápido: devolver el ítem (toda la pila) a la mochila
+        else if (eventData.button == PointerEventData.InputButton.Right && kind == SlotKind.Quick && !IsEmpty)
+        {
+            if (ControladorInventario.Instance != null &&
+                ControladorInventario.Instance.AddItem(currentItemId, CurrentIcon, currentQuantity))
+            {
+                Clear();
+            }
         }
     }
 

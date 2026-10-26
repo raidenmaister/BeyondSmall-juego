@@ -158,6 +158,7 @@ public static class SpiderSetup
         anim.applyRootMotion = false;
 
         var box = root.AddComponent<BoxCollider>();
+        box.isTrigger = true; // la araña se mueve por transform; un collider sólido empujaría al CharacterController a través del piso
         box.center = root.transform.InverseTransformPoint(b.center);
         box.size = new Vector3(b.size.x, Mathf.Max(b.size.y, 0.6f), b.size.z);
 

@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 8037523365278756908}
   - component: {fileID: 4131340694496860813}
   - component: {fileID: 4215971236023120428}
+  - component: {fileID: 5630549532892485478}
   m_Layer: 0
   m_Name: Spider_Enemy
   m_TagString: Untagged
@@ -50,7 +51,7 @@ BoxCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
@@ -68,7 +69,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 973c574093259984f900fdf24d004ace, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RatHealth
-  enemyName: "Ara\xF1a"
+  enemyName: "Ara\xF1a negra"
   maxHealth: 80
   currentHealth: 80
 --- !u!114 &4215971236023120428
@@ -94,8 +95,13 @@ MonoBehaviour:
   detectionDistance: 10
   loseDistance: 16
   attackRange: 1.6
-  attackDamage: 20
-  attackInterval: 1.1
+  attackDamage: 30
+  attackInterval: 2
+  webCooldown: 6
+  webMinRange: 5
+  webMaxRange: 13
+  webSlow: 0.45
+  webSlowSeconds: 3
   knockbackDistance: 1.2
   knockbackDuration: 0.2
   hitRecoveryTime: 0.8
@@ -103,6 +109,23 @@ MonoBehaviour:
   fallbackDeathDuration: 1
   healthBarDistance: 14
   healthBarHeight: 1.4
+--- !u!114 &5630549532892485478
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4253726565030911784}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 079521db87328e84ba454039fa73473b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DropTable
+  entries:
+  - itemId: Colmillo
+    amount: 2
+    chance: 75
+    group: 
 --- !u!1001 &1709558388841339929
 PrefabInstance:
   m_ObjectHideFlags: 0

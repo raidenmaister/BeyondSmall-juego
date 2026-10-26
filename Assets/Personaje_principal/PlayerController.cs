@@ -24,6 +24,7 @@ public class PlayerController : MonoBehaviour
     public float gravity = -25f;
     public float fallMultiplier = 2.5f;
     private Vector3 velocity;
+    private Vector3 lastSafePosition;
     private bool isGrounded;
 
     [Header("Combate y Combo")]
@@ -46,6 +47,7 @@ public class PlayerController : MonoBehaviour
 
     void Start()
     {
+        lastSafePosition = transform.position;
         if (controller == null) controller = GetComponent<CharacterController>();
         if (animator == null) animator = GetComponent<Animator>();
         if (cameraTransform == null && Camera.main != null) cameraTransform = Camera.main.transform;
@@ -130,6 +132,7 @@ public class PlayerController : MonoBehaviour
             float currentSpeed = walkSpeed;
             if (isCrouching) currentSpeed = crouchSpeed;
             else if (isRunning) currentSpeed = runSpeed;
+            currentSpeed *= StatusEffects.SpeedMultiplier;
 
             float targetAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg + cameraTransform.eulerAngles.y;
             float angle = Mathf.SmoothDampAngle(transform.eulerAngles.y, targetAngle, ref turnSmoothVelocity, turnSmoothTime);
@@ -163,6 +166,16 @@ public class PlayerController : MonoBehaviour
         }
 
         controller.Move(velocity * Time.deltaTime);
+
+        // Red de seguridad: si algo lo saca del mapa, volver al último punto seguro
+        if (isGrounded) lastSafePosition = transform.position;
+        else if (transform.position.y < lastSafePosition.y - 30f)
+        {
+            controller.enabled = false;
+            transform.position = lastSafePosition + Vector3.up * 0.5f;
+            controller.enabled = true;
+            velocity = Vector3.zero;
+        }
     }
 
     void HandleInventoryInput()
@@ -387,6 +400,8 @@ public class PlayerController : MonoBehaviour
     private void ApplyHitToRat(RatHealth ratHealth)
     {
         ratHealth.TakeDamage(attackDamage);
+        var hudBar = Object.FindAnyObjectByType<RatHealthBarUI>();
+        if (hudBar != null) hudBar.FocusOn(ratHealth);
 
         var ratAI = ratHealth.GetComponent<RatAI>();
         if (ratAI != null)
@@ -394,6 +409,14 @@ public class PlayerController : MonoBehaviour
             Vector3 knockbackDir = (ratHealth.transform.position - transform.position).normalized;
             knockbackDir.y = 0f;
             ratAI.TakeHit(knockbackDir);
+        }
+
+        var creatureAI = ratHealth.GetComponent<CreatureAI>();
+        if (creatureAI != null)
+        {
+            Vector3 knockbackDir = (ratHealth.transform.position - transform.position).normalized;
+            knockbackDir.y = 0f;
+            creatureAI.TakeHit(knockbackDir);
         }
 
         var spiderAI = ratHealth.GetComponent<SpiderAI>();

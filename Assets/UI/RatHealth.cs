@@ -15,6 +15,8 @@ public class RatHealth : MonoBehaviour
 
     public System.Action<float, float> OnHealthChanged;
     public System.Action OnDeath;
+    /// <summary>Permite a la IA reducir o anular el daño (armadura, enterrada...).</summary>
+    public System.Func<float, float> DamageFilter;
 
     private void Awake()
     {
@@ -24,6 +26,8 @@ public class RatHealth : MonoBehaviour
     public void TakeDamage(float amount)
     {
         if (IsDead || amount <= 0f) return;
+        if (DamageFilter != null) amount = DamageFilter(amount);
+        if (amount <= 0f) return;
 
         currentHealth = Mathf.Max(0f, currentHealth - amount);
         OnHealthChanged?.Invoke(currentHealth, maxHealth);

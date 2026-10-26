@@ -1,0 +1,13 @@
+Modelos 3D de enemigos descargados de Poly Pizza (https://poly.pizza)
+
+Hormiga       "Ant"          Poly by Google  CC-BY 3.0  https://poly.pizza/m/7v2EF8dZgtA
+Oruga         "Caterpillar"  Poly by Google  CC-BY 3.0  https://poly.pizza/m/64T47O5VHAB
+Lombriz       "Earthworm"    Poly by Google  CC-BY 3.0  https://poly.pizza/m/5qpRFOLShAQ
+Ciempies      "Centipede"    Poly by Google  CC-BY 3.0  https://poly.pizza/m/8C36B7L_2hR
+Escarabajo    "Beetle"       Poly by Google  CC-BY 3.0  https://poly.pizza/m/4yufxgZ1QQ2
+Mariposa      "Butterfly"    Poly by Google  CC-BY 3.0  https://poly.pizza/m/e9NAQQrCbLu
+Abeja         "Bee Enemy"    Quaternius      CC0 1.0    https://poly.pizza/m/6HsU6GQt3a
+
+La cochinilla, el cuerno del escarabajo y los objetos que sueltan los enemigos
+(hueso, piel, colmillo, pata de ciempies, cuerno, exoesqueleto, aguijon, alas)
+se generaron proceduralmente (Assets/Editor/EnemiesBuilder.cs).

@@ -14,6 +14,8 @@ GameObject:
   - component: {fileID: 2309190793747895463}
   - component: {fileID: 7538771734493635564}
   - component: {fileID: 3669645578162757347}
+  - component: {fileID: 3244044992515198096}
+  - component: {fileID: 5995296045070322561}
   m_Layer: 0
   m_Name: Carne_Drop
   m_TagString: Untagged
@@ -157,3 +159,30 @@ MonoBehaviour:
   displayName: Carne
   itemIcon: {fileID: 21300000, guid: 621b7d36e7f242d478b7927077e9696e, type: 3}
   quantity: 1
+--- !u!114 &3244044992515198096
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7922097268913359607}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e453ba09c78bc144daa8907f297ad2ba, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DropItem
+  hoverHeight: 0.45
+  spinSpeed: 35
+--- !u!114 &5995296045070322561
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7922097268913359607}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f1751e95794aff24481385de6eb86309, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ItemSparkle
+  color: {r: 1, g: 0.6, b: 0.5, a: 1}

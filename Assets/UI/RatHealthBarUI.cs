@@ -105,9 +105,58 @@ public class RatHealthBarUI : MonoBehaviour
         }
     }
 
+    private float retargetTimer;
+
+    /// <summary>Fija la barra del HUD en el enemigo golpeado.</summary>
+    public void FocusOn(RatHealth target)
+    {
+        if (target == null || target.IsDead || target == ratHealth) return;
+        if (ratHealth != null) ratHealth.OnHealthChanged -= HandleHealthChanged;
+        ratHealth = target;
+        ratTarget = target.transform;
+        ratHealth.OnHealthChanged += HandleHealthChanged;
+        isPlayerInRange = false;
+        retargetTimer = 1.0f;
+        UpdateName();
+        UpdateVisuals(immediate: true);
+    }
+
     public void Update()
     {
+        retargetTimer -= Time.deltaTime;
+        if (retargetTimer <= 0f)
+        {
+            retargetTimer = 0.2f;
+            RetargetNearest();
+        }
         EvaluateProximity(Time.deltaTime);
+    }
+
+    /// <summary>La barra muestra siempre al enemigo vivo mas cercano dentro del rango de deteccion.</summary>
+    private void RetargetNearest()
+    {
+        FindReferencesIfNeeded();
+        if (player == null) return;
+
+        RatHealth best = null;
+        float bestDist = detectionDistance + hideBuffer;
+        foreach (var h in Object.FindObjectsByType<RatHealth>())
+        {
+            if (h == null || h.IsDead) continue;
+            var cai = h.GetComponent<CreatureAI>();
+            if (cai != null && cai.IsHidden) continue;
+            float d = Vector3.Distance(player.position, h.transform.position);
+            if (d < bestDist) { bestDist = d; best = h; }
+        }
+        if (best == null || best == ratHealth) return;
+
+        if (ratHealth != null) ratHealth.OnHealthChanged -= HandleHealthChanged;
+        ratHealth = best;
+        ratTarget = best.transform;
+        ratHealth.OnHealthChanged += HandleHealthChanged;
+        isPlayerInRange = false;
+        UpdateName();
+        UpdateVisuals(immediate: true);
     }
 
     public void EvaluateProximity(float deltaTime)

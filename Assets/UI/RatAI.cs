@@ -62,7 +62,7 @@ public class RatAI : MonoBehaviour
     public float attackDamage = 35.0f;
 
     [Tooltip("Intervalo en segundos entre cada golpe de ataque.")]
-    public float attackInterval = 1.2f;
+    public float attackInterval = 1.3f;
 
     [Tooltip("Referencia al componente de salud del jugador.")]
     public PlayerHealth playerHealth;
@@ -102,6 +102,8 @@ public class RatAI : MonoBehaviour
 
     private void Awake()
     {
+        // Se mueven por transform: un collider sólido empuja al CharacterController del jugador a través del piso
+        foreach (var c in GetComponentsInChildren<Collider>(true)) c.isTrigger = true;
         homePosition = transform.position;
         homeRotation = transform.rotation;
 
@@ -215,6 +217,8 @@ public class RatAI : MonoBehaviour
 
         // 2. Dejar caer carne en el suelo con las probabilidades: 3 (20%), 2 (30%), 1 (50%)
         DropMeat(bodyCenter);
+        var extraDrops = GetComponent<DropTable>();
+        if (extraDrops != null) extraDrops.Drop(new Vector3(bodyCenter.x, transform.position.y, bodyCenter.z));
 
         // Ocultar la barra de vida de la rata
         if (healthBarUI != null)

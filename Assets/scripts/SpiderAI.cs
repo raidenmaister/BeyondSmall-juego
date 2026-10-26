@@ -31,8 +31,15 @@ public class SpiderAI : MonoBehaviour
 
     [Header("Ataque")]
     public float attackRange = 1.6f;
-    public float attackDamage = 20f;
-    public float attackInterval = 1.1f;
+    public float attackDamage = 30f;
+    public float attackInterval = 2f;
+
+    [Header("Telaraña (mecanica unica)")]
+    public float webCooldown = 6f;
+    public float webMinRange = 5f;
+    public float webMaxRange = 13f;
+    public float webSlow = 0.45f;
+    public float webSlowSeconds = 3f;
 
     [Header("Golpe recibido")]
     public float knockbackDistance = 1.2f;
@@ -55,6 +62,8 @@ public class SpiderAI : MonoBehaviour
     private Vector3 knockbackVelocity;
     private string currentAnim = "";
     private float groundY;
+    private float webTimer = 3f;
+    private float webPause;
 
     public SpiderState CurrentState => state;
 
@@ -62,6 +71,8 @@ public class SpiderAI : MonoBehaviour
 
     private void Awake()
     {
+        // Se mueven por transform: un collider sólido empuja al CharacterController del jugador a través del piso
+        foreach (var c in GetComponentsInChildren<Collider>(true)) c.isTrigger = true;
         if (animator == null) animator = GetComponentInChildren<Animator>();
         if (health == null) health = GetComponent<RatHealth>();
         homePosition = transform.position;
@@ -115,6 +126,7 @@ public class SpiderAI : MonoBehaviour
         if (player == null) return;
 
         float dt = Time.deltaTime;
+        webTimer -= dt;
         Vector3 toPlayer = player.position - transform.position;
         toPlayer.y = 0f;
         float dist = toPlayer.magnitude;
@@ -128,7 +140,21 @@ public class SpiderAI : MonoBehaviour
             case SpiderState.Run:
                 if (dist > loseDistance) { SetState(SpiderState.Return); break; }
                 RotateTowards(toPlayer, dt);
+                if (webPause > 0f)
+                {   // disparando telaraña: se detiene un instante
+                    webPause -= dt;
+                    if (webPause <= 0f)
+                    {
+                        Play("Attack");
+                        Vector3 mouth = transform.position + ModelForward * 1.2f + Vector3.up * 0.7f;
+                        EnemyProjectile.Spawn(mouth, player.position + Vector3.up * 1f, 13f, 0f, new Color(0.92f, 0.92f, 0.95f), webSlow, webSlowSeconds, 0.8f);
+                        webTimer = webCooldown;
+                        currentAnim = "";
+                    }
+                    break;
+                }
                 if (dist <= attackRange) { SetState(SpiderState.Attack); break; }
+                if (webTimer <= 0f && dist >= webMinRange && dist <= webMaxRange) { webPause = 0.6f; Play("Idle"); break; }
                 Move(ModelForward * (runSpeed * dt));
                 break;
 
@@ -256,36 +282,10 @@ public class SpiderAI : MonoBehaviour
 
         if (deathParticlesPrefab != null) Instantiate(deathParticlesPrefab, center, Quaternion.identity);
         foreach (var r in rends) r.enabled = false;
+        var drops = GetComponent<DropTable>();
+        if (drops != null) drops.Drop(new Vector3(center.x, groundY, center.z));
 
         yield return new WaitForSeconds(0.15f);
         Destroy(gameObject);
-    }
-
-    // ---------- Barra de vida simple (IMGUI, independiente del Canvas) ----------
-    private void OnGUI()
-    {
-        if (state == SpiderState.Dead || health == null || player == null) return;
-        if (Vector3.Distance(player.position, transform.position) > healthBarDistance) return;
-
-        var cam = Camera.main;
-        if (cam == null) return;
-
-        Vector3 world = transform.position + Vector3.up * healthBarHeight;
-        Vector3 sp = cam.WorldToScreenPoint(world);
-        if (sp.z <= 0f) return;
-
-        const float w = 90f, h = 10f;
-        float x = sp.x - w * 0.5f;
-        float y = Screen.height - sp.y - h * 0.5f;
-
-        var prev = GUI.color;
-        GUI.color = new Color(0f, 0f, 0f, 0.7f);
-        GUI.DrawTexture(new Rect(x - 1, y - 1, w + 2, h + 2), Texture2D.whiteTexture);
-        GUI.color = new Color(0.85f, 0.1f, 0.1f, 1f);
-        GUI.DrawTexture(new Rect(x, y, w * health.HealthPercent, h), Texture2D.whiteTexture);
-        GUI.color = prev;
-
-        var style = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontSize = 11 };
-        GUI.Label(new Rect(x - 20, y - 18, w + 40, 16), health.EnemyName, style);
     }
 }

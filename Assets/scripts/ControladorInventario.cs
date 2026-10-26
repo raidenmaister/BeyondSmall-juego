@@ -193,6 +193,14 @@ public class ControladorInventario : MonoBehaviour
         string lower = rawName.ToLower();
 
         if (lower.Contains("carne") || lower.Contains("meat")) return "Carne";
+        if (lower.StartsWith("hueso")) return "Hueso";
+        if (lower.StartsWith("piel")) return "Piel";
+        if (lower.StartsWith("colmillo")) return "Colmillo";
+        if (lower.StartsWith("patasciempies") || lower.StartsWith("pataciempies")) return "PataCiempies";
+        if (lower.StartsWith("cuerno")) return "Cuerno";
+        if (lower.StartsWith("exoesqueleto")) return "Exoesqueleto";
+        if (lower.StartsWith("aguijon")) return "Aguijon";
+        if (lower == "alas" || lower.StartsWith("alas_") || lower.StartsWith("alas(")) return "Alas";
         if (lower.Contains("chincheta") && lower.Contains("doblada")) return "Chincheta_Doblada";
         if (lower.Contains("tornillo")) return "Tornillo";
         if (lower.Contains("tuerca")) return "Tuerca";
