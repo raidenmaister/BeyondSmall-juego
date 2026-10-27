@@ -1,0 +1,142 @@
+import bpy, math, sys
+from mathutils import Vector
+
+argv = sys.argv[sys.argv.index("--") + 1:]
+OUT_GLB, OUT_PNG = argv[0], argv[1]
+
+bpy.ops.wm.read_factory_settings(use_empty=True)
+scn = bpy.context.scene
+
+def mat(name, color, rough=0.5, metal=0.0, emit=None, emit_strength=0.0, alpha=1.0):
+    m = bpy.data.materials.new(name)
+    m.use_nodes = True
+    b = m.node_tree.nodes["Principled BSDF"]
+    b.inputs["Base Color"].default_value = (*color, 1)
+    b.inputs["Roughness"].default_value = rough
+    b.inputs["Metallic"].default_value = metal
+    if emit:
+        b.inputs["Emission Color"].default_value = (*emit, 1)
+        b.inputs["Emission Strength"].default_value = emit_strength
+    if alpha < 1:
+        b.inputs["Alpha"].default_value = alpha
+        m.surface_render_method = 'BLENDED'
+    return m
+
+M_BLACK = mat("FF_Black", (0.025, 0.022, 0.02), 0.35)
+M_ORANGE = mat("FF_Orange", (0.95, 0.55, 0.12), 0.45)
+M_RED = mat("FF_Red", (0.7, 0.1, 0.07), 0.45)
+M_ELYTRA = mat("FF_Elytra", (0.06, 0.045, 0.03), 0.3)
+M_EDGE = mat("FF_Edge", (0.85, 0.7, 0.25), 0.5)
+M_WING = mat("FF_Wing", (0.75, 0.8, 0.85), 0.2, alpha=0.35)
+M_LANTERN = mat("FF_Lantern", (0.85, 1.0, 0.45), 0.6, emit=(0.55, 1.0, 0.25), emit_strength=6.0)
+
+def apply(obj, loc=False):
+    bpy.ops.object.select_all(action='DESELECT')
+    obj.select_set(True); bpy.context.view_layer.objects.active = obj
+    bpy.ops.object.transform_apply(location=loc, rotation=True, scale=True)
+
+def sphere(name, loc, scale, m, rot=(0, 0, 0), seg=24, rings=14):
+    bpy.ops.mesh.primitive_uv_sphere_add(segments=seg, ring_count=rings, radius=1, location=loc, rotation=rot)
+    o = bpy.context.active_object; o.name = name; o.scale = scale
+    o.data.materials.append(m); bpy.ops.object.shade_smooth(); apply(o)
+    return o
+
+def cyl(name, p0, p1, r, m):
+    p0, p1 = Vector(p0), Vector(p1); d = p1 - p0
+    bpy.ops.mesh.primitive_cylinder_add(vertices=8, radius=r, depth=d.length, location=(p0 + p1) / 2)
+    o = bpy.context.active_object; o.name = name; o.data.name = name
+    o.rotation_mode = 'QUATERNION'; o.rotation_quaternion = d.to_track_quat('Z', 'Y')
+    o.data.materials.append(m); bpy.ops.object.shade_smooth(); apply(o)
+    return o
+
+def join(objs, name):
+    bpy.ops.object.select_all(action='DESELECT')
+    for o in objs: o.select_set(True)
+    bpy.context.view_layer.objects.active = objs[0]
+    bpy.ops.object.join(); o = bpy.context.active_object; o.name = name; o.data.name = name
+    return o
+
+# Forward = -Y, Up = +Z. Longitud total ~1.0
+parts = []
+head = sphere("head", (0, -0.47, -0.01), (0.075, 0.07, 0.065), M_BLACK)
+# ojos
+eyes = [sphere("eye", (s * 0.055, -0.5, 0.0), (0.035, 0.035, 0.035), M_BLACK, seg=12, rings=8) for s in (-1, 1)]
+thorax = sphere("thorax", (0, -0.27, -0.01), (0.1, 0.11, 0.08), M_BLACK)
+body = [head, thorax] + eyes
+# abdomen segmentado: los 3 primeros oscuros, los ultimos 3 son la "linterna"
+lantern = []
+for i in range(7):
+    t = i / 6.0
+    y = -0.15 + t * 0.58
+    r = 0.12 - 0.045 * t * t
+    seg = sphere("seg%d" % i, (0, y, -0.03 - 0.03 * t), (r, 0.085, r * 0.72), M_LANTERN if i >= 4 else M_ELYTRA)
+    (lantern if i >= 4 else body).append(seg)
+# pronoto: escudo naranja con mancha roja y punto negro
+pron = sphere("Pronotum", (0, -0.38, 0.05), (0.17, 0.14, 0.045), M_ORANGE, seg=32, rings=16)
+spot = sphere("spot", (0, -0.38, 0.085), (0.05, 0.06, 0.02), M_RED)
+dot = sphere("dot", (0, -0.385, 0.1), (0.02, 0.03, 0.012), M_BLACK, seg=12, rings=8)
+pron = join([pron, spot, dot], "Pronotum")
+
+# elitros abiertos (como en vuelo), con borde amarillo
+ely = []
+for s in (-1, 1):
+    e = sphere("ely", (s * 0.1, -0.05, 0.07), (0.09, 0.3, 0.03), M_ELYTRA, rot=(0.3, s * 0.55, s * 0.4))
+    edge = sphere("edge", (s * 0.14, -0.05, 0.05), (0.025, 0.28, 0.018), M_EDGE, rot=(0.3, s * 0.55, s * 0.4), seg=12, rings=10)
+    ely += [e, edge]
+elytra = join(ely, "Elytra")
+
+# antenas segmentadas
+ant = []
+for s in (-1, 1):
+    a = (s * 0.03, -0.52, 0.03); b = (s * 0.1, -0.66, 0.1); c = (s * 0.17, -0.76, 0.12)
+    ant += [cyl("ant", a, b, 0.008, M_BLACK), cyl("ant", b, c, 0.006, M_BLACK)]
+antennae = join(ant, "Antennae")
+
+# 6 patas recogidas bajo el cuerpo
+legs = []
+for s in (-1, 1):
+    for k, y in enumerate((-0.33, -0.25, -0.17)):
+        hip = (s * 0.06, y, -0.06); knee = (s * 0.17, y - 0.03 + k * 0.03, -0.1); foot = (s * 0.2, y + 0.06, -0.2)
+        legs += [cyl("leg", hip, knee, 0.012, M_BLACK), cyl("leg", knee, foot, 0.009, M_BLACK)]
+legs = join(legs, "Legs")
+
+body = join(body, "Body")
+lantern = join(lantern, "Lantern")
+
+# alas traseras membranosas: origen en la bisagra, para animarlas en Unity
+def wing(name, s):
+    bpy.ops.mesh.primitive_circle_add(vertices=32, radius=1, fill_type='NGON', location=(0, 0, 0))
+    o = bpy.context.active_object; o.name = name; o.data.name = name
+    o.scale = (0.3, 0.1, 1); apply(o)
+    for v in o.data.vertices:
+        v.co.x = v.co.x * s + s * 0.29   # desplazar para que la bisagra quede en el origen
+        v.co.y += abs(v.co.x) * 0.35     # barrido hacia atras
+    o.location = (s * 0.06, -0.2, 0.09)
+    o.data.materials.append(M_WING)
+    sol = o.modifiers.new("thick", 'SOLIDIFY'); sol.thickness = 0.004
+    apply(o)
+    bpy.ops.object.modifier_apply(modifier="thick")
+    return o
+
+wl = wing("Wing_L", 1); wr = wing("Wing_R", -1)
+
+root = bpy.data.objects.new("Firefly", None); scn.collection.objects.link(root)
+for o in (body, lantern, pron, elytra, antennae, legs, wl, wr):
+    o.parent = root
+
+bpy.ops.object.select_all(action='SELECT')
+bpy.ops.export_scene.gltf(filepath=OUT_GLB, export_format='GLB', use_selection=True, export_apply=True)
+
+# render de vista previa
+world = bpy.data.worlds.new("w"); scn.world = world; world.use_nodes = True
+world.node_tree.nodes["Background"].inputs[0].default_value = (0.02, 0.03, 0.06, 1)
+cam_data = bpy.data.cameras.new("cam"); cam = bpy.data.objects.new("cam", cam_data); scn.collection.objects.link(cam)
+cam.location = (1.3, -1.4, 0.9); cam.rotation_euler = (math.radians(65), 0, math.radians(43)); cam_data.lens = 50
+scn.camera = cam
+ld = bpy.data.lights.new("key", 'SUN'); ld.energy = 3; l = bpy.data.objects.new("key", ld); scn.collection.objects.link(l)
+l.rotation_euler = (math.radians(40), math.radians(20), math.radians(30))
+scn.render.engine = 'BLENDER_EEVEE' if 'BLENDER_EEVEE' in [e.identifier for e in bpy.types.RenderSettings.bl_rna.properties['engine'].enum_items] else 'BLENDER_EEVEE_NEXT'
+scn.render.resolution_x = 800; scn.render.resolution_y = 600
+scn.render.filepath = OUT_PNG
+bpy.ops.render.render(write_still=True)
+print("OK_FIREFLY")

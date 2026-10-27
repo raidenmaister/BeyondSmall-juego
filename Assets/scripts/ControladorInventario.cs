@@ -137,6 +137,50 @@ public class ControladorInventario : MonoBehaviour
         return false;
     }
 
+    /// <summary>
+    /// Cantidad total de un item sumando la mochila y los apartados de acceso rapido.
+    /// </summary>
+    public int GetTotalCount(string itemId)
+    {
+        string normalizedId = NormalizeItemName(itemId);
+        int total = 0;
+        foreach (var slot in TodosLosSlots())
+        {
+            if (slot != null && !slot.IsEmpty && string.Equals(slot.ItemId, normalizedId, System.StringComparison.OrdinalIgnoreCase))
+                total += slot.Quantity;
+        }
+        return total;
+    }
+
+    /// <summary>
+    /// Quita una cantidad de un item: primero de la mochila y luego del acceso rapido.
+    /// Devuelve false (sin quitar nada) si no hay suficientes.
+    /// </summary>
+    public bool RemoveItem(string itemId, int amount = 1)
+    {
+        if (amount <= 0) return true;
+        InitializeSlotsIfNeeded();
+        if (GetTotalCount(itemId) < amount) return false;
+
+        string normalizedId = NormalizeItemName(itemId);
+        foreach (var slot in TodosLosSlots())
+        {
+            if (amount <= 0) break;
+            if (slot == null || slot.IsEmpty || !string.Equals(slot.ItemId, normalizedId, System.StringComparison.OrdinalIgnoreCase)) continue;
+            int quitar = Mathf.Min(amount, slot.Quantity);
+            slot.SetQuantity(slot.Quantity - quitar);
+            amount -= quitar;
+        }
+        return true;
+    }
+
+    private IEnumerable<InventorySlotUI> TodosLosSlots()
+    {
+        foreach (var s in slots) yield return s;
+        if (QuickAccessBar.Instance != null && QuickAccessBar.Instance.pageSlots != null)
+            foreach (var s in QuickAccessBar.Instance.pageSlots) yield return s;
+    }
+
     public int GetItemCount(string itemId)
     {
         string normalizedId = NormalizeItemName(itemId);
@@ -192,6 +236,7 @@ public class ControladorInventario : MonoBehaviour
         if (string.IsNullOrEmpty(rawName)) return "Item";
         string lower = rawName.ToLower();
 
+        if ((lower.Contains("carne") || lower.Contains("meat")) && (lower.Contains("cocinad") || lower.Contains("cooked"))) return "Carne_Cocinada";
         if (lower.Contains("carne") || lower.Contains("meat")) return "Carne";
         if (lower.StartsWith("hueso")) return "Hueso";
         if (lower.StartsWith("piel")) return "Piel";

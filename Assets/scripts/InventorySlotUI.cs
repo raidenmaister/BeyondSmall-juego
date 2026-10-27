@@ -218,8 +218,14 @@ public class InventorySlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, I
 
     public void OnPointerClick(PointerEventData eventData)
     {
+        // Clic derecho sobre comida (mochila o acceso rapido): comerla
+        if (eventData.button == PointerEventData.InputButton.Right && (kind == SlotKind.Inventory || kind == SlotKind.Quick) &&
+            !IsEmpty && PlayerHunger.EsComida(currentItemId) && PlayerHunger.Instance != null)
+        {
+            PlayerHunger.Instance.Comer(currentItemId);
+        }
         // Clic derecho sobre un slot de crafteo: devolver el ítem a la mochila
-        if (eventData.button == PointerEventData.InputButton.Right && kind == SlotKind.CraftInput && !IsEmpty)
+        else if (eventData.button == PointerEventData.InputButton.Right && kind == SlotKind.CraftInput && !IsEmpty)
         {
             ReturnToInventory();
         }

@@ -28,6 +28,8 @@ public class CreatureAI : MonoBehaviour
     public float chaseSpeed = 3f;
     public float returnSpeed = 3f;
     public float rotationSpeed = 9f;
+    [Tooltip("Escala todas las velocidades de este bicho (persecucion, embestidas, picadas...). 1 = velocidad original")]
+    [Range(0.2f, 1.5f)] public float speedMultiplier = 0.55f;
 
     [Header("Deteccion")]
     public float detectionDistance = 10f;
@@ -183,7 +185,11 @@ public class CreatureAI : MonoBehaviour
         transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(dir.normalized), rotationSpeed * dt);
     }
 
-    void Step(Vector3 dir, float speed, float dt)
+    // movimiento propio del bicho: escalado por speedMultiplier
+    void Step(Vector3 dir, float speed, float dt) { StepRaw(dir, speed * speedMultiplier, dt); }
+
+    // movimiento sin escalar (empujones por golpes)
+    void StepRaw(Vector3 dir, float speed, float dt)
     {
         dir.y = 0f;
         if (dir.sqrMagnitude < 0.0001f) return;
@@ -194,7 +200,8 @@ public class CreatureAI : MonoBehaviour
         transform.position = p;
     }
 
-    void SetMove(float v) { foreach (var c in visuals) c.move = v; }
+    // las patas se mueven mas despacio cuando el bicho es mas lento, para que no "patine"
+    void SetMove(float v) { float k = Mathf.Clamp01(0.3f + 0.7f * speedMultiplier); foreach (var c in visuals) c.move = v * k; }
 
     void SetState(S s) { state = s; stateTime = 0f; hitDone = false; }
 
@@ -295,7 +302,7 @@ public class CreatureAI : MonoBehaviour
             case S.Recover:
                 cv.pitch = Mathf.MoveTowards(cv.pitch, 0f, 80f * dt);
                 knockVel = Vector3.MoveTowards(knockVel, Vector3.zero, 12f * dt);
-                if (knockVel.sqrMagnitude > 0.01f) Step(knockVel, knockVel.magnitude, dt);
+                if (knockVel.sqrMagnitude > 0.01f) StepRaw(knockVel, knockVel.magnitude, dt);
                 if (stateTime >= Mathf.Max(0.5f, hitRecoveryTime)) SetState(S.Chase);
                 break;
         }
@@ -345,7 +352,7 @@ public class CreatureAI : MonoBehaviour
 
             case S.Recover: // golpeada sin enterrarse
                 knockVel = Vector3.MoveTowards(knockVel, Vector3.zero, 14f * dt);
-                if (knockVel.sqrMagnitude > 0.01f) Step(knockVel, knockVel.magnitude, dt);
+                if (knockVel.sqrMagnitude > 0.01f) StepRaw(knockVel, knockVel.magnitude, dt);
                 if (stateTime >= hitRecoveryTime) SetState(S.Chase);
                 break;
         }
@@ -391,7 +398,7 @@ public class CreatureAI : MonoBehaviour
                 break;
             case S.Recover:
                 knockVel = Vector3.MoveTowards(knockVel, Vector3.zero, 14f * dt);
-                if (knockVel.sqrMagnitude > 0.01f) Step(knockVel, knockVel.magnitude, dt);
+                if (knockVel.sqrMagnitude > 0.01f) StepRaw(knockVel, knockVel.magnitude, dt);
                 Face(toPlayer, dt);
                 if (stateTime >= hitRecoveryTime) SetState(S.Chase);
                 break;
@@ -445,7 +452,7 @@ public class CreatureAI : MonoBehaviour
                 break;
             case S.Recover:
                 knockVel = Vector3.MoveTowards(knockVel, Vector3.zero, 14f * dt);
-                if (knockVel.sqrMagnitude > 0.01f) Step(knockVel, knockVel.magnitude, dt);
+                if (knockVel.sqrMagnitude > 0.01f) StepRaw(knockVel, knockVel.magnitude, dt);
                 Face(toPlayer, dt);
                 if (stateTime >= hitRecoveryTime) SetState(S.Chase);
                 break;
@@ -516,7 +523,7 @@ public class CreatureAI : MonoBehaviour
             case S.Recover:
                 cv.pitch = Mathf.MoveTowards(cv.pitch, 0f, 50f * dt);
                 knockVel = Vector3.MoveTowards(knockVel, Vector3.zero, 12f * dt);
-                if (knockVel.sqrMagnitude > 0.01f) Step(knockVel, knockVel.magnitude, dt);
+                if (knockVel.sqrMagnitude > 0.01f) StepRaw(knockVel, knockVel.magnitude, dt);
                 if (stateTime >= Mathf.Max(0.7f, hitRecoveryTime)) SetState(S.Chase);
                 break;
         }
@@ -545,7 +552,7 @@ public class CreatureAI : MonoBehaviour
             case S.Chase: // zumba en circulos alrededor del jugador
                 SetAnim("Run");
                 if (dist > loseDistance) { SetState(S.Return); break; }
-                orbitAngle += orbitDir * 1.6f * dt;
+                orbitAngle += orbitDir * 1.6f * speedMultiplier * dt;
                 Vector3 want = player.position + new Vector3(Mathf.Sin(orbitAngle), 0f, Mathf.Cos(orbitAngle)) * 4.5f;
                 Vector3 to = Flat(want - transform.position);
                 Step(to, chaseSpeed, dt);
@@ -564,7 +571,7 @@ public class CreatureAI : MonoBehaviour
                 Vector3 dir = player.position + Vector3.up * 0.9f - transform.position;
                 float d3 = dir.magnitude;
                 Face(Flat(dir), dt * 2f);
-                var np = transform.position + dir.normalized * 15f * dt;
+                var np = transform.position + dir.normalized * 15f * speedMultiplier * dt;
                 np.x = Mathf.Clamp(np.x, roomMin.x, roomMax.x); np.z = Mathf.Clamp(np.z, roomMin.y, roomMax.y);
                 transform.position = np;
                 if (d3 <= 1.7f && !hitDone)
@@ -578,12 +585,12 @@ public class CreatureAI : MonoBehaviour
                 break;
 
             case S.Recover: // se retira y vuelve a orbitar
-                var rp = transform.position + (lockedDir.sqrMagnitude > 0.01f ? lockedDir : -toPlayer.normalized) * 7f * dt;
+                var rp = transform.position + (lockedDir.sqrMagnitude > 0.01f ? lockedDir : -toPlayer.normalized) * 7f * speedMultiplier * dt;
                 rp.x = Mathf.Clamp(rp.x, roomMin.x, roomMax.x); rp.z = Mathf.Clamp(rp.z, roomMin.y, roomMax.y);
                 rp.y = Mathf.MoveTowards(rp.y, groundY + flyHeight + 0.8f, 2f * dt);
                 transform.position = rp;
                 knockVel = Vector3.MoveTowards(knockVel, Vector3.zero, 14f * dt);
-                if (knockVel.sqrMagnitude > 0.01f) Step(knockVel, knockVel.magnitude, dt);
+                if (knockVel.sqrMagnitude > 0.01f) StepRaw(knockVel, knockVel.magnitude, dt);
                 if (stateTime >= Mathf.Max(0.9f, hitRecoveryTime)) { SetState(S.Chase); orbitAngle = Mathf.Atan2(-toPlayer.x, -toPlayer.z); }
                 break;
 
@@ -629,7 +636,7 @@ public class CreatureAI : MonoBehaviour
                 lockedDir = want.sqrMagnitude > 0.01f ? want.normalized : lockedDir;
                 Step(lockedDir, 9f, dt);
                 transform.rotation = Quaternion.LookRotation(lockedDir);
-                cv.spin += 9f / 0.9f * Mathf.Rad2Deg * dt;
+                cv.spin += 9f * speedMultiplier / 0.9f * Mathf.Rad2Deg * dt;
                 if (!hitDone && dist <= 2.0f)
                 {
                     hitDone = true;
@@ -645,7 +652,7 @@ public class CreatureAI : MonoBehaviour
                 if (cv.spin > 1f) cv.spin = Mathf.MoveTowards(cv.spin > 180f ? cv.spin - 360f : cv.spin, 0f, 360f * dt);
                 cv.curl = Mathf.MoveTowards(cv.curl, 0f, 1.4f * dt);
                 knockVel = Vector3.MoveTowards(knockVel, Vector3.zero, 14f * dt);
-                if (knockVel.sqrMagnitude > 0.01f) Step(knockVel, knockVel.magnitude, dt);
+                if (knockVel.sqrMagnitude > 0.01f) StepRaw(knockVel, knockVel.magnitude, dt);
                 if (stateTime >= 1.2f) { cv.spin = 0f; SetState(S.Chase); }
                 break;
 

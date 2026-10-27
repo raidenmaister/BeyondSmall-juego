@@ -45,6 +45,10 @@ public class PlayerController : MonoBehaviour
     private bool hasChargedAttackFired = false;
     private float lastAttackFinishTime = 0f;
 
+    // Para la barra de comida: correr y pelear gastan energia
+    public bool IsRunning { get; private set; }
+    public bool IsAttacking => isAttacking;
+
     void Start()
     {
         lastSafePosition = transform.position;
@@ -75,6 +79,7 @@ public class PlayerController : MonoBehaviour
         // Si el inventario está abierto, podemos bloquear el movimiento del jugador (opcional pero recomendado)
         if (isInventoryOpen)
         {
+            IsRunning = false;
             if (animator != null) animator.SetFloat("Speed", 0f);
             return; 
         }
@@ -128,6 +133,7 @@ public class PlayerController : MonoBehaviour
         if (direction.magnitude >= 0.1f && !isAttacking)
         {
             bool isRunning = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+            IsRunning = isRunning && !isCrouching;
 
             float currentSpeed = walkSpeed;
             if (isCrouching) currentSpeed = crouchSpeed;
@@ -145,6 +151,7 @@ public class PlayerController : MonoBehaviour
         }
         else
         {
+            IsRunning = false;
             if (animator != null) animator.SetFloat("Speed", 0f);
         }
 

@@ -19,8 +19,8 @@ public class SpiderAI : MonoBehaviour
     public PlayerHealth playerHealth;
 
     [Header("Movimiento")]
-    public float runSpeed = 5.5f;
-    public float returnSpeed = 4f;
+    public float runSpeed = 3.3f;
+    public float returnSpeed = 2.5f;
     public float rotationSpeed = 10f;
     [Tooltip("Si el modelo mira hacia -Z local, activa esto.")]
     public bool invertForward = false;

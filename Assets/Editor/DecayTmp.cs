@@ -188,6 +188,12 @@ public static class DecayTmp
                         log.AppendLine(System.IO.Path.GetFileNameWithoutExtension(p) + ": uv " + uv.Length + " min " + mn + " max " + mx + " mat=" + (mat != null ? mat.name + " tex=" + (mat.GetTexture("_BaseMap") != null ? mat.GetTexture("_BaseMap").name : "NULL") + " col=" + mat.GetColor("_BaseColor") + " shader=" + mat.shader.name : "null") + " meshSame=" + (pf != null && pf.GetComponent<MeshFilter>().sharedMesh == m));
                     }
                 }
+                else if (cmd == "survdump") SurvivalSetup.DumpHud(log);
+                else if (cmd.StartsWith("survival")) SurvivalSetup.Install(log);
+                else if (cmd.StartsWith("survplay")) { SurvivalSetup.BeginPlayTest(); log.AppendLine("survplay iniciado"); }
+                else if (cmd.StartsWith("dnsky ")) DayNightSetup.SkyShot(log, cmd.Substring(6));
+                else if (cmd.StartsWith("daynight")) DayNightSetup.Install(log, cmd.Contains("reset"));
+                else if (cmd.StartsWith("dnplay ")) { DayNightSetup.BeginPlayTest(cmd.Substring(7)); log.AppendLine("dnplay iniciado"); }
                 else if (cmd == "playtest") EnemyPlayTest.Begin();
                 else if (cmd.StartsWith("shots")) Shots(log, cmd);
                 else if (cmd == "reimport")

@@ -26,8 +26,8 @@ public class RatAI : MonoBehaviour
     public RatHealth ratHealth;
 
     [Header("Velocidades de Movimiento")]
-    public float runSpeed = 8.45f; // Aumentado otro 30% (de 6.5f a 8.45f)
-    public float walkSpeed = 10.56f; // El doble de rápido (de 5.28f a 10.56f)
+    public float runSpeed = 4.5f; // Un poco mas lento que el jugador corriendo (6) para poder escapar
+    public float walkSpeed = 3.2f; // Velocidad al volver a su lugar
     public float rotationSpeed = 14.0f;
 
     [Header("Distancias y Tiempos")]

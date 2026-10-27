@@ -88,8 +88,8 @@ MonoBehaviour:
   animator: {fileID: 5463117810536218237}
   health: {fileID: 4131340694496860813}
   playerHealth: {fileID: 0}
-  runSpeed: 5.5
-  returnSpeed: 4
+  runSpeed: 3.3
+  returnSpeed: 2.5
   rotationSpeed: 10
   invertForward: 0
   detectionDistance: 10
