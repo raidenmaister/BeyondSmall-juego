@@ -72,6 +72,14 @@ public class DayNightCycle : MonoBehaviour
 
     // 0 = pleno dia, 1 = noche cerrada
     public float Noche { get; private set; }
+    /// <summary>0 = afuera, 1 = dentro del hormiguero (sin sol ni cielo, ambiente de cueva). Lo controla Hormiguero.</summary>
+    public static float factorSubterraneo;
+    /// <summary>Dentro del arbol hueco: como factorSubterraneo pero lo controla la colmena (se usa el mayor de los dos).</summary>
+    public static float factorInterior;
+    public static float Encierro => Mathf.Max(factorSubterraneo, factorInterior);
+    public Color ambienteCueva = new Color(0.16f, 0.14f, 0.12f);
+    public Color nieblaCueva = new Color(0.025f, 0.02f, 0.016f);
+    public float densidadNieblaCueva = 0.011f;
     // 0..1, maximo cuando el sol esta en el horizonte
     public float Atardecer { get; private set; }
     // Entre las 4:30 y el mediodia: las luciernagas usan esto para irse al amanecer
@@ -126,7 +134,7 @@ public class DayNightCycle : MonoBehaviour
         {
             float velocidad = 24f / Mathf.Max(0.01f, duracionDiaMinutos * 60f);
             if (Noche > 0.5f) velocidad *= multiplicadorNoche;
-            if (Input.GetKey(teclaAcelerar)) velocidad *= aceleracion;
+            if (Controles.Pulsada(Controles.Accion.AcelerarTiempo)) velocidad *= aceleracion;
             hora = Mathf.Repeat(hora + velocidad * Time.deltaTime, 24f);
         }
         Aplicar(false);
@@ -165,7 +173,8 @@ public class DayNightCycle : MonoBehaviour
 
         // --- Sol
         Color colSol = Color.Lerp(colorSolAtardecer, colorSolDia, wDia);
-        float iSol = intensidadSol * Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(-0.04f, 0.2f, elev));
+        float afuera = 1f - Mathf.Clamp01(Encierro);
+        float iSol = intensidadSol * Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(-0.04f, 0.2f, elev)) * afuera;
         if (sol != null)
         {
             sol.transform.rotation = rotSol;
@@ -174,7 +183,7 @@ public class DayNightCycle : MonoBehaviour
             sol.enabled = iSol > 0.001f;
         }
         // --- Luna
-        float iLuna = intensidadLuna * Noche * Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(-0.02f, 0.25f, haciaLuna.y));
+        float iLuna = intensidadLuna * Noche * Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(-0.02f, 0.25f, haciaLuna.y)) * afuera;
         if (luna != null)
         {
             luna.transform.rotation = rotLuna;
@@ -190,8 +199,8 @@ public class DayNightCycle : MonoBehaviour
         foreach (var kv in intensidadOriginal)
         {
             if (kv.Key == null) continue;
-            kv.Key.intensity = kv.Value * factorDia;
-            kv.Key.enabled = factorDia > 0.001f;
+            kv.Key.intensity = kv.Value * factorDia * afuera;
+            kv.Key.enabled = factorDia * afuera > 0.001f;
         }
 
         // --- Ambiente y niebla
@@ -200,6 +209,15 @@ public class DayNightCycle : MonoBehaviour
         RenderSettings.ambientGroundColor = Mezcla(ambienteSueloNoche, ambienteSueloAtardecer, ambienteSueloDia, wNoche, wDia);
         RenderSettings.fogColor = Mezcla(nieblaNoche, nieblaAtardecer, nieblaDia, wNoche, wDia);
         RenderSettings.fogDensity = Mathf.Lerp(densidadNieblaDia, densidadNieblaNoche, Noche);
+        if (Encierro > 0f)
+        {   // dentro del hormiguero: oscuridad de cueva
+            float k = Mathf.Clamp01(Encierro);
+            RenderSettings.ambientSkyColor = Color.Lerp(RenderSettings.ambientSkyColor, ambienteCueva, k);
+            RenderSettings.ambientEquatorColor = Color.Lerp(RenderSettings.ambientEquatorColor, ambienteCueva * 0.8f, k);
+            RenderSettings.ambientGroundColor = Color.Lerp(RenderSettings.ambientGroundColor, ambienteCueva * 0.6f, k);
+            RenderSettings.fogColor = Color.Lerp(RenderSettings.fogColor, nieblaCueva, k);
+            RenderSettings.fogDensity = Mathf.Lerp(RenderSettings.fogDensity, densidadNieblaCueva, k);
+        }
         RenderSettings.reflectionIntensity = Mathf.Lerp(reflejosDia, reflejosNoche, Noche);
         if (forzarGI || Time.unscaledTime >= siguienteActualizacionGI)
         {
@@ -230,7 +248,7 @@ public class DayNightCycle : MonoBehaviour
         // --- Grillos: solo de noche, con una leve variacion de tono
         if (Application.isPlaying)
         {
-            float vol = volumenGrillos * Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.35f, 0.9f, Noche));
+            float vol = volumenGrillos * Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.35f, 0.9f, Noche)) * (1f - Mathf.Clamp01(Encierro)) * Ajustes.VolAmbiente;
             if (grillos != null)
             {
                 grillos.volume = vol;

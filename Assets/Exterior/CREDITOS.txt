@@ -1,0 +1,7 @@
+Modelos y texturas de Poly Haven (https://polyhaven.com), licencia CC0 (dominio publico).
+Modelos (reducidos con Blender a LOD0/LOD1): dandelion_01, flower_gazania, flower_ursinia, flower_empodium,
+shrub_sorrel_01, shrub_02, shrub_03, shrub_04, grass_bermuda_01, fern_02, nettle_plant, weed_plant_02,
+dry_branches_medium_01, moss_01, rock_07, rock_09, stone_01, namaqualand_boulder_05, tree_stump_01,
+tree_stump_02, dead_tree_trunk, fir_sapling.
+Impostores renderizados en Blender a partir de: jacaranda_tree, fir_sapling.
+Texturas: forest_ground_04, forest_leaves_04, old_planks_02.

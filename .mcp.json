@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "unityMCP": {
+      "command": "C:/Users/Axel/AppData/Roaming/Python/Python310/Scripts/uvx.exe",
+      "args": ["--from", "mcpforunityserver==10.3.0", "mcp-for-unity", "--transport", "stdio"]
+    }
+  }
+}

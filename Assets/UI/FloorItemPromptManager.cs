@@ -236,7 +236,7 @@ public class FloorItemPromptManager : MonoBehaviour
 
     private void HandleHoldInteraction(TrackedItem closestNearItem)
     {
-        if (Input.GetKey(KeyCode.E))
+        if (Controles.Pulsada(Controles.Accion.Interactuar))
         {
             if (!hasCollectedThisPress)
             {
@@ -540,7 +540,8 @@ public class FloorItemPromptManager : MonoBehaviour
         textRT.sizeDelta = Vector2.zero;
 
         var tmp = textGO.GetComponent<TextMeshProUGUI>();
-        tmp.text = "E";
+        tmp.text = Controles.NombreTecla(Controles.Accion.Interactuar);
+        tmp.enableAutoSizing = true; tmp.fontSizeMin = 14f; tmp.fontSizeMax = 44f;
         tmp.fontSize = 44f;
         tmp.fontStyle = FontStyles.Bold;
         tmp.alignment = TextAlignmentOptions.Center;

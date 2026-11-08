@@ -1,0 +1,27 @@
+Sonidos descargados de Freesound.org, todos con licencia Creative Commons 0 (dominio publico).
+Bee_Buzz            https://freesound.org/s/496237/
+Butterfly_Flutter   https://freesound.org/s/402450/
+Rat_Squeak1         https://freesound.org/s/536753/
+Rat_Squeak2         https://freesound.org/s/288941/
+Spider_Hiss         https://freesound.org/s/470148/
+Spider_Attack       https://freesound.org/s/672710/
+Beetle_Squark       https://freesound.org/s/502211/
+Beetle_Hiss         https://freesound.org/s/758900/
+Ants_Scuttle        https://freesound.org/s/175228/
+Centipede_Clicks    https://freesound.org/s/467700/
+Caterpillar_Chew    https://freesound.org/s/700418/
+Caterpillar_Wet     https://freesound.org/s/842099/
+Worm_Squelch        https://freesound.org/s/649982/
+Worm_Dig            https://freesound.org/s/651293/
+Woodlouse_Chitter   https://freesound.org/s/800277/
+Step_Grass1         https://freesound.org/s/421135/
+Step_Grass2         https://freesound.org/s/488074/
+Step_Grass3         https://freesound.org/s/384902/
+Step_Grass4         https://freesound.org/s/384869/
+Step_Grass5         https://freesound.org/s/396014/
+Punch_Hit1          https://freesound.org/s/686320/
+Punch_Hit2          https://freesound.org/s/478157/
+Punch_Hit3          https://freesound.org/s/794255/
+Punch_Swing1        https://freesound.org/s/420670/
+Punch_Swing2        https://freesound.org/s/563484/
+Ambient_ForestDay   https://freesound.org/s/523372/

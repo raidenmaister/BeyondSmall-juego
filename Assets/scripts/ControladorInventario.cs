@@ -50,7 +50,7 @@ public class ControladorInventario : MonoBehaviour
     void Update()
     {
         // Al presionar la tecla 'I'
-        if (Input.GetKeyDown(KeyCode.I))
+        if (Controles.Bajada(Controles.Accion.Inventario))
         {
             ToggleInventario();
         }

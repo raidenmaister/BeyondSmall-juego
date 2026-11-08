@@ -61,13 +61,13 @@ public class Campfire : MonoBehaviour
         if (cerca && !inventarioAbierto)
         {
             if (cocinando)
-                SurvivalUI.Indicacion(this, $"Cocinando carne... {Mathf.FloorToInt(progreso / tiempoCoccion * 100f)}%   (quedan {crudas})   [{teclaCocinar}] Parar");
+                SurvivalUI.Indicacion(this, $"Cocinando carne... {Mathf.FloorToInt(progreso / tiempoCoccion * 100f)}%   (quedan {crudas})   [{Controles.NombreTecla(Controles.Accion.Cocinar)}] Parar");
             else if (crudas > 0)
-                SurvivalUI.Indicacion(this, $"[{teclaCocinar}] Cocinar carne ({crudas})");
+                SurvivalUI.Indicacion(this, $"[{Controles.NombreTecla(Controles.Accion.Cocinar)}] Cocinar carne ({crudas})");
             else
                 SurvivalUI.Indicacion(this, "Fogata: consigue carne cazando bichos para cocinarla");
 
-            if (Input.GetKeyDown(teclaCocinar))
+            if (Controles.Bajada(Controles.Accion.Cocinar))
             {
                 if (cocinando) Detener();
                 else if (crudas > 0) Empezar();

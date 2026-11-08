@@ -1,0 +1,10 @@
+Fuente: Barlow / Barlow Condensed (SIL Open Font License, ver Fuentes/OFL.txt).
+Sonidos de Freesound.org (CC0):
+UI_Mover https://freesound.org/s/350861/   UI_Aceptar https://freesound.org/s/220176/
+UI_Atras https://freesound.org/s/419494/   UI_Ajuste https://freesound.org/s/561347/
+Intro_Zumbido https://freesound.org/s/854269/   Intro_Encendido https://freesound.org/s/844243/
+Intro_Carga https://freesound.org/s/375925/   Intro_Encoger https://freesound.org/s/742835/
+Intro_Apagado https://freesound.org/s/636578/   Intro_Latido https://freesound.org/s/451948/
+Intro_Respiro https://freesound.org/s/615047/
+Musica del menu: Music_Ethereal.ogg (incluida en el proyecto, SourceFiles/SoundFX).
+Logo y fondos: generados para el juego (capturas del propio juego).

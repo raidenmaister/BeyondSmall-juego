@@ -1,0 +1,10 @@
+Texturas de Poly Haven (CC0): excavated_soil_wall, brown_mud_dry. Ademas usa forest_ground_04 del exterior.
+Sonidos de Freesound.org (CC0):
+Cueva_Goteo     https://freesound.org/s/818888/
+Cueva_Ambiente  https://freesound.org/s/650379/
+Reina_Rugido    https://freesound.org/s/726877/
+Reina_Chillido  https://freesound.org/s/757292/
+Reina_Grunido   https://freesound.org/s/476947/
+Horda_Alarma    https://freesound.org/s/631985/
+Hongos, hojas, maiz, larvas, hongo gigante y tuneles: generados por codigo (HormigueroBuilder).
+Hormigas y reina: malla de hormiga del proyecto (Assets/Enemies/Models/ant.glb), la reina con el abdomen agrandado.

@@ -62,6 +62,8 @@ public class SpiderAI : MonoBehaviour
     private Vector3 knockbackVelocity;
     private string currentAnim = "";
     private float groundY;
+    private bool enSalon;       // zona de la araña: salon o exterior (no sale de ella)
+    private float sueloOffset;
     private float webTimer = 3f;
     private float webPause;
 
@@ -78,6 +80,8 @@ public class SpiderAI : MonoBehaviour
         homePosition = transform.position;
         homeRotation = transform.rotation;
         groundY = transform.position.y;
+        enSalon = ZonaJuego.EnEdificio(transform.position);
+        sueloOffset = transform.position.y - ZonaJuego.Suelo(transform.position, enSalon);
     }
 
     private void OnEnable()
@@ -202,7 +206,8 @@ public class SpiderAI : MonoBehaviour
 
     private void Move(Vector3 delta)
     {
-        Vector3 next = transform.position + delta;
+        Vector3 next = ZonaJuego.Limitar(transform.position + delta, enSalon);
+        if (!enSalon) groundY = ZonaJuego.Altura(next.x, next.z) + sueloOffset;   // afuera sigue las colinas
         next.y = groundY;
         transform.position = next;
     }

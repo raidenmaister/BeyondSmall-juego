@@ -135,7 +135,7 @@ public class PlayerHunger : MonoBehaviour
 
         // --- Comer con F (primero la cocinada)
         bool inventarioAbierto = ControladorInventario.Instance != null && ControladorInventario.Instance.IsOpen;
-        if (!inventarioAbierto && Input.GetKeyDown(teclaComer))
+        if (!inventarioAbierto && Controles.Bajada(Controles.Accion.Comer))
         {
             var inv = ControladorInventario.Instance;
             if (inv != null && inv.GetTotalCount("Carne_Cocinada") > 0) Comer("Carne_Cocinada");

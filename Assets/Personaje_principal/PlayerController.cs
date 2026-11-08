@@ -48,6 +48,10 @@ public class PlayerController : MonoBehaviour
     // Para la barra de comida: correr y pelear gastan energia
     public bool IsRunning { get; private set; }
     public bool IsAttacking => isAttacking;
+    public bool IsGrounded => isGrounded;
+    public bool InventarioAbierto => isInventoryOpen;
+    // Para el sonido de los golpes: true si el puñetazo conecto con un enemigo
+    public System.Action<bool> OnPunch;
 
     void Start()
     {
@@ -103,7 +107,7 @@ public class PlayerController : MonoBehaviour
         HandleBlockInput();
 
         // Control de Agachado
-        if (Input.GetKey(KeyCode.LeftControl) && isGrounded && !isAttacking)
+        if (Controles.Pulsada(Controles.Accion.Agacharse) && isGrounded && !isAttacking)
         {
             isCrouching = true;
             controller.height = crouchHeight;
@@ -124,15 +128,15 @@ public class PlayerController : MonoBehaviour
 
         if (!isAttacking)
         {
-            horizontal = Input.GetAxisRaw("Horizontal");
-            vertical = Input.GetAxisRaw("Vertical");
+            horizontal = Controles.Eje(Controles.Accion.Izquierda, Controles.Accion.Derecha, KeyCode.LeftArrow, KeyCode.RightArrow);
+            vertical = Controles.Eje(Controles.Accion.Atras, Controles.Accion.Adelante, KeyCode.DownArrow, KeyCode.UpArrow);
         }
 
         Vector3 direction = new Vector3(horizontal, 0f, vertical).normalized;
 
         if (direction.magnitude >= 0.1f && !isAttacking)
         {
-            bool isRunning = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+            bool isRunning = Controles.Pulsada(Controles.Accion.Correr);
             IsRunning = isRunning && !isCrouching;
 
             float currentSpeed = walkSpeed;
@@ -156,7 +160,7 @@ public class PlayerController : MonoBehaviour
         }
 
         // Salto
-        if (Input.GetButtonDown("Jump") && isGrounded && !isCrouching && !isAttacking)
+        if (Controles.Bajada(Controles.Accion.Saltar) && isGrounded && !isCrouching && !isAttacking)
         {
             velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
             if (animator != null) animator.SetTrigger("Jump");
@@ -187,7 +191,7 @@ public class PlayerController : MonoBehaviour
 
     void HandleInventoryInput()
     {
-        if (Input.GetKeyDown(KeyCode.I))
+        if (Controles.Bajada(Controles.Accion.Inventario))
         {
             isInventoryOpen = !isInventoryOpen; // Alterna el estado (true/false)
 
@@ -269,7 +273,7 @@ public class PlayerController : MonoBehaviour
     {
         if (!isGrounded || isCrouching) return;
 
-        if (Input.GetMouseButtonDown(0))
+        if (Controles.Bajada(Controles.Accion.Atacar))
         {
             clickDownTime = Time.time;
             hasChargedAttackFired = false;
@@ -291,7 +295,7 @@ public class PlayerController : MonoBehaviour
         }
 
         // Golpe Cargado (mantener presionado)
-        if (Input.GetMouseButton(0) && !hasChargedAttackFired && !isAttacking)
+        if (Controles.Pulsada(Controles.Accion.Atacar) && !hasChargedAttackFired && !isAttacking)
         {
             if (Time.time - clickDownTime >= chargeThreshold)
             {
@@ -316,7 +320,7 @@ public class PlayerController : MonoBehaviour
         }
 
         // Golpe Ligero en cola si se soltó el clic
-        if (Input.GetMouseButtonUp(0))
+        if (Controles.Soltada(Controles.Accion.Atacar))
         {
             if (!hasChargedAttackFired && isAttacking && (Time.time - clickDownTime < chargeThreshold))
             {
@@ -397,11 +401,14 @@ public class PlayerController : MonoBehaviour
                     if (angle <= 70f) // Frente a la vista del jugador
                     {
                         ApplyHitToRat(ratHealth);
+                        hitFound = true;
                         break;
                     }
                 }
             }
         }
+
+        OnPunch?.Invoke(hitFound);
     }
 
     private void ApplyHitToRat(RatHealth ratHealth)
@@ -437,7 +444,7 @@ public class PlayerController : MonoBehaviour
 
     void HandleBlockInput()
     {
-        if (Input.GetMouseButtonDown(1) && isGrounded && !isAttacking)
+        if (Controles.Bajada(Controles.Accion.Bloquear) && isGrounded && !isAttacking)
         {
             if (animator != null)
             {

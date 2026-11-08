@@ -1,0 +1,7 @@
+Texturas de Poly Haven (CC0): bark_brown_02, rough_wood, moss_wood.
+Sonidos de Freesound.org (CC0):
+Colmena_Interior https://freesound.org/s/353199/   Colmena_Exterior https://freesound.org/s/467224/
+Enjambre_Furioso https://freesound.org/s/817927/   Antorcha_Encender https://freesound.org/s/386385/
+Antorcha_Fuego https://freesound.org/s/422742/   Larva_Aplastar https://freesound.org/s/495117/
+Reina_Chillido (copiado de Hormiguero/Audio, Freesound 757292). Zumbido de abeja: Audio/SFX/Animales/Bee_Buzz.
+Arbol, colmena, panales, antorcha: generados por codigo (ArbolBuilder). Abejas: modelo de abeja del proyecto (Enemies/Models/bee.glb).

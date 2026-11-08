@@ -1,0 +1,51 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6578b75d5a29ed245afdc45de1ca2d49, type: 3}
+  m_Name: MenuRecursos
+  m_EditorClassIdentifier: Assembly-CSharp::MenuRecursos
+  fuenteMenu: {fileID: 11400000, guid: d95c963d159bb294ba428628ba8e3341, type: 2}
+  fuenteTexto: {fileID: 11400000, guid: 871cadf39ec366e46ad63b91d80610fd, type: 2}
+  logo: {fileID: 21300000, guid: 07d0c164f43655f4f92a2d74c83ddbc4, type: 3}
+  fondos:
+  - {fileID: 21300000, guid: 60b022a54b546c7489e6f38b8474cdaa, type: 3}
+  - {fileID: 21300000, guid: 0cab75f2b38a1e04f9f97d8bfa1a1506, type: 3}
+  - {fileID: 21300000, guid: 928c5d13c10b969468f1bb056bff0868, type: 3}
+  - {fileID: 21300000, guid: e751bb2bd7c2eb547ab4fb442a0fd0e8, type: 3}
+  - {fileID: 21300000, guid: 20bef8023d290d846aefab27a276130c, type: 3}
+  - {fileID: 21300000, guid: c583d40d52cf35c45aafaa269660fd02, type: 3}
+  - {fileID: 21300000, guid: 660aee4804e263541b660c02d459ba10, type: 3}
+  - {fileID: 21300000, guid: f75835317a006844e9d9827f789085f0, type: 3}
+  - {fileID: 21300000, guid: f845aedd969962e478e4c504db11dc68, type: 3}
+  - {fileID: 21300000, guid: 6c0d52c063e3fe941a66e117263b9373, type: 3}
+  - {fileID: 21300000, guid: 45c89c09acfd277478a654ba2ab0cc6b, type: 3}
+  - {fileID: 21300000, guid: 544c3b5051ea6de4282b95a69ee7b1d5, type: 3}
+  nombresFondos:
+  - Abeja
+  - Atardecer
+  - El jardin
+  - El limite
+  - La fogata
+  - El hormiguero
+  - Luciernagas
+  - La salida
+  - La reina
+  - El salon abandonado
+  - Entre los pupitres
+  - Los tuneles
+  musica: {fileID: 8300000, guid: 14a03cd1268203641931fa2bdedd950f, type: 3}
+  sonidoMover: {fileID: 8300000, guid: 8f3214b1a3ba04f479971f1db5d0d16d, type: 3}
+  sonidoAceptar: {fileID: 8300000, guid: ff0086d84f4fda942b694b0a1c4bdb6f, type: 3}
+  sonidoAtras: {fileID: 8300000, guid: 9fa0dc0a399d764429325ac425c926be, type: 3}
+  sonidoAjuste: {fileID: 8300000, guid: 763b92d0cc85ee44e94f591d5b010de5, type: 3}
+  acento: {r: 0.27, g: 0.86, b: 0.78, a: 1}
+  escenaJuego: Class_rom_exemple
+  escenaMenu: MenuPrincipal

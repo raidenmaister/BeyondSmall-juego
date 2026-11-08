@@ -55,8 +55,9 @@ public class CreatureAI : MonoBehaviour
     [Header("Efectos")]
     public GameObject deathParticlesPrefab;
 
-    // limites del salon para que las embestidas no atraviesen las paredes
-    static readonly Vector2 roomMin = new Vector2(-69f, -92f), roomMax = new Vector2(69f, 80f);
+    // zona del bicho (salon o exterior) para que las embestidas no atraviesen paredes ni la cerca
+    bool enSalon;
+    float sueloOffset;
 
     RatHealth health;
     Transform player;
@@ -100,6 +101,8 @@ public class CreatureAI : MonoBehaviour
         health = GetComponent<RatHealth>();
         animator = GetComponentInChildren<Animator>();
         home = transform.position; homeRot = transform.rotation; groundY = transform.position.y;
+        enSalon = ZonaJuego.EnEdificio(transform.position);
+        sueloOffset = transform.position.y - ZonaJuego.Suelo(transform.position, enSalon);
         seed = Random.value * 100f;
         if (visuals == null || visuals.Length == 0) visuals = GetComponentsInChildren<CreatureVisual>();
         health.DamageFilter = FilterDamage;
@@ -194,8 +197,8 @@ public class CreatureAI : MonoBehaviour
         dir.y = 0f;
         if (dir.sqrMagnitude < 0.0001f) return;
         Vector3 p = transform.position + dir.normalized * speed * dt;
-        p.x = Mathf.Clamp(p.x, roomMin.x, roomMax.x);
-        p.z = Mathf.Clamp(p.z, roomMin.y, roomMax.y);
+        p = ZonaJuego.Limitar(p, enSalon);
+        if (!enSalon) groundY = ZonaJuego.Altura(p.x, p.z) + sueloOffset;   // afuera sigue las colinas
         p.y = (kind == Kind.Bee || kind == Kind.Butterfly) ? p.y : groundY;
         transform.position = p;
     }
@@ -510,7 +513,7 @@ public class CreatureAI : MonoBehaviour
                     break;
                 }
                 Vector3 p = transform.position;
-                bool wall = p.x <= roomMin.x + 0.1f || p.x >= roomMax.x - 0.1f || p.z <= roomMin.y + 0.1f || p.z >= roomMax.y - 0.1f;
+                bool wall = ZonaJuego.EnBorde(p, enSalon);
                 if (stateTime >= 0.9f || wall) { attackCd = attackInterval; SetState(S.Stunned); }   // fallo: se aturde
                 break;
 
@@ -533,6 +536,7 @@ public class CreatureAI : MonoBehaviour
     void UpdateBee(float dt, Vector3 toPlayer, float dist)
     {
         var cv = Main;
+        if (!enSalon) groundY = ZonaJuego.Altura(transform.position.x, transform.position.z) + sueloOffset;
         float targetY = groundY + flyHeight + Mathf.Sin(Time.time * 3f + seed) * 0.25f;
         var pos = transform.position;
         pos.y = Mathf.MoveTowards(pos.y, targetY, 3f * dt);
@@ -572,7 +576,7 @@ public class CreatureAI : MonoBehaviour
                 float d3 = dir.magnitude;
                 Face(Flat(dir), dt * 2f);
                 var np = transform.position + dir.normalized * 15f * speedMultiplier * dt;
-                np.x = Mathf.Clamp(np.x, roomMin.x, roomMax.x); np.z = Mathf.Clamp(np.z, roomMin.y, roomMax.y);
+                np = ZonaJuego.Limitar(np, enSalon);
                 transform.position = np;
                 if (d3 <= 1.7f && !hitDone)
                 {
@@ -586,7 +590,7 @@ public class CreatureAI : MonoBehaviour
 
             case S.Recover: // se retira y vuelve a orbitar
                 var rp = transform.position + (lockedDir.sqrMagnitude > 0.01f ? lockedDir : -toPlayer.normalized) * 7f * speedMultiplier * dt;
-                rp.x = Mathf.Clamp(rp.x, roomMin.x, roomMax.x); rp.z = Mathf.Clamp(rp.z, roomMin.y, roomMax.y);
+                rp = ZonaJuego.Limitar(rp, enSalon);
                 rp.y = Mathf.MoveTowards(rp.y, groundY + flyHeight + 0.8f, 2f * dt);
                 transform.position = rp;
                 knockVel = Vector3.MoveTowards(knockVel, Vector3.zero, 14f * dt);
@@ -643,7 +647,7 @@ public class CreatureAI : MonoBehaviour
                     if (playerHealth != null) playerHealth.TakeDamage(attackDamage);
                 }
                 Vector3 p = transform.position;
-                bool wall = p.x <= roomMin.x + 0.1f || p.x >= roomMax.x - 0.1f || p.z <= roomMin.y + 0.1f || p.z >= roomMax.y - 0.1f;
+                bool wall = ZonaJuego.EnBorde(p, enSalon);
                 if (stateTime >= 1.5f || wall) { attackCd = attackInterval; SetState(S.Recover); }
                 break;
 
@@ -669,6 +673,7 @@ public class CreatureAI : MonoBehaviour
     {
         var cv = Main;
         var pos = transform.position;
+        if (!enSalon) groundY = ZonaJuego.Altura(pos.x, pos.z) + sueloOffset;
         float targetY = groundY + flyHeight + Mathf.Sin(Time.time * 2.3f + seed) * 0.5f;
         pos.y = Mathf.MoveTowards(pos.y, targetY, 2f * dt);
         transform.position = pos;

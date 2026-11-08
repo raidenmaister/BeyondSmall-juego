@@ -107,6 +107,10 @@ public class RatHealthBarUI : MonoBehaviour
 
     private float retargetTimer;
 
+    /// <summary>Jefe activo (la reina hormiga): si esta cerca, la barra lo muestra a el y no al enemigo mas cercano.</summary>
+    public static RatHealth jefe;
+    public static float distanciaJefe = 110f;
+
     /// <summary>Fija la barra del HUD en el enemigo golpeado.</summary>
     public void FocusOn(RatHealth target)
     {
@@ -148,6 +152,7 @@ public class RatHealthBarUI : MonoBehaviour
             float d = Vector3.Distance(player.position, h.transform.position);
             if (d < bestDist) { bestDist = d; best = h; }
         }
+        if (jefe != null && !jefe.IsDead && Vector3.Distance(player.position, jefe.transform.position) < distanciaJefe) best = jefe;
         if (best == null || best == ratHealth) return;
 
         if (ratHealth != null) ratHealth.OnHealthChanged -= HandleHealthChanged;
@@ -178,10 +183,11 @@ public class RatHealthBarUI : MonoBehaviour
         else
         {
             float dist = Vector3.Distance(player.position, ratTarget.position);
+            float rango = ratHealth != null && ratHealth == jefe ? distanciaJefe : detectionDistance;
 
             if (!isPlayerInRange)
             {
-                if (dist <= detectionDistance)
+                if (dist <= rango)
                 {
                     isPlayerInRange = true;
                     targetAlpha = 1f;
@@ -194,7 +200,7 @@ public class RatHealthBarUI : MonoBehaviour
             }
             else
             {
-                if (dist > (detectionDistance + hideBuffer))
+                if (dist > (rango + hideBuffer))
                 {
                     isPlayerInRange = false;
                     targetAlpha = 0f;
