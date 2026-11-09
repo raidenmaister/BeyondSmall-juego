@@ -15,6 +15,9 @@ public class FotografoFinal : MonoBehaviour
     public const string Carpeta = "Assets/Final/Resources/";
     public static bool Trabajando { get; private set; }
 
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void Reiniciar() { Trabajando = false; }
+
     Vector3 estudio;
     readonly List<GameObject> props = new List<GameObject>();
     const int CapaRetrato = 31;

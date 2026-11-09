@@ -28,6 +28,9 @@ public class InventorySlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, I
     private static GameObject dragGhost;
     private static bool dropHandled;
 
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void Reiniciar() { dragSource = null; dragGhost = null; dropHandled = false; }
+
     public bool IsEmpty => currentQuantity <= 0 || string.IsNullOrEmpty(currentItemId);
     public string ItemId => currentItemId;
     public int Quantity => currentQuantity;

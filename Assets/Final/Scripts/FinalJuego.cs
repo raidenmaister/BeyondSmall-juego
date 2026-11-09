@@ -14,6 +14,9 @@ using UnityEngine.UI;
 public class FinalJuego : MonoBehaviour
 {
     public static bool Activo { get; private set; }
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void Reiniciar() { Activo = false; }
     public const float EscalaGrande = 14f;      // el jugador mide 2 u (~11 cm): x14 son ~1.6 m
 
     MaquinaCrecimiento maq;

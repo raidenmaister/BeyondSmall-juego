@@ -16,6 +16,9 @@ public class IntroDespertar : MonoBehaviour
 {
     public static bool Activa { get; private set; }
 
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void Reiniciar() { Activa = false; }
+
     public AudioClip encendido, zumbido, carga, encoger, apagado, latido, respiro;
     public TMP_FontAsset fuente;
     [TextArea] public string[] pensamientos = { "...¿que fue ese ruido?", "¿Por que todo se ve tan... enorme?" };

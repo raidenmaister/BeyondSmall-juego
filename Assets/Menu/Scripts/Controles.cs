@@ -35,6 +35,17 @@ public static class Controles
 
     static Dictionary<Accion, KeyCode> teclas;
 
+    // el editor no recarga el dominio al dar Play: si se detuvo con un menu, la intro, la muerte o el mapa
+    // abiertos, Bloqueado seguia en true y el jugador no respondia en el siguiente Play
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void Reiniciar()
+    {
+        Bloqueado = false;
+        teclas = null;
+        Time.timeScale = 1f;
+        AudioListener.pause = false;
+    }
+
     static void Cargar()
     {
         if (teclas != null) return;

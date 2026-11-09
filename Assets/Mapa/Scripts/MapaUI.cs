@@ -13,7 +13,11 @@ public class MapaUI : MonoBehaviour
     public static bool Abierto { get; private set; }
     static int cuadroCierre = -10;
     /// <summary>El menu de pausa no debe abrirse con el mismo Esc que cierra el mapa.</summary>
-    public static bool BloqueaPausa => Abierto || Time.frameCount - cuadroCierre <= 1;
+    public static bool BloqueaPausa => Abierto || (Time.frameCount >= cuadroCierre && Time.frameCount - cuadroCierre <= 1);
+
+    // sin recarga de dominio, cuadroCierre de un Play anterior (mayor que el frameCount nuevo) bloqueaba Esc
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void Reiniciar() { Abierto = false; cuadroCierre = -10; }
 
     const float LadoBase = 840f;        // lado del mapa en la UI con zoom 1
     const float ZoomMin = 1f, ZoomMax = 7f;

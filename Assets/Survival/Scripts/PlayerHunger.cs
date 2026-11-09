@@ -24,6 +24,8 @@ public class PlayerHunger : MonoBehaviour
     public float gastoCorriendo = 0.8f;
     [Tooltip("Gasto extra mientras atacas")]
     public float gastoPeleando = 3f;
+    [Tooltip("Multiplica todo el gasto: 0.25 = la comida baja 4 veces mas lento (300% mas lento)")]
+    public float ritmoGasto = 0.25f;
 
     [Header("Efectos")]
     [Tooltip("Vida que se pierde por segundo con la comida en 0")]
@@ -116,7 +118,7 @@ public class PlayerHunger : MonoBehaviour
             if (controller.IsRunning) gasto += gastoCorriendo;
             if (controller.IsAttacking) gasto += gastoPeleando;
         }
-        currentFood = Mathf.Max(0f, currentFood - gasto * dt);
+        currentFood = Mathf.Max(0f, currentFood - gasto * ritmoGasto * dt);
 
         // --- Efectos sobre vida y stamina
         if (health != null)

@@ -27,6 +27,7 @@ public static class Partida
     static void Reiniciar()
     {
         RanuraActual = -1; Dif = Dificultad.Normal; TiempoJugado = 0f; Pendiente = null;
+        Ajustes.IntroPendiente = true;      // un Play directo a la escena del juego corre la intro
     }
 
     /// <summary>En pacifico los animales no persiguen ni hacen daño.</summary>

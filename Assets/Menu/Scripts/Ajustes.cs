@@ -40,8 +40,12 @@ public static class Ajustes
     {
         Cargar();
         Aplicar();
-        SceneManager.sceneLoaded += (s, m) => AlCargarEscena();
+        // sin recarga de dominio, una lambda se sumaba de nuevo en cada Play
+        SceneManager.sceneLoaded -= AlCargarEscenaEvento;
+        SceneManager.sceneLoaded += AlCargarEscenaEvento;
     }
+
+    static void AlCargarEscenaEvento(Scene s, LoadSceneMode m) { AlCargarEscena(); }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void PrimeraEscena() { AlCargarEscena(); }
