@@ -84,7 +84,7 @@ public class ReinaAbeja : MonoBehaviour
         if (estado == Estado.Dormida)
         {
             // reposa sobre el panal real moviendo un poco las alas
-            if (new Vector2(aJugador.x, aJugador.z).magnitude < radioCamara + 4f && Mathf.Abs(aJugador.y) < 20f) Despertar();
+            if (Partida.Agresivos && new Vector2(aJugador.x, aJugador.z).magnitude < radioCamara + 4f && Mathf.Abs(aJugador.y) < 20f) Despertar();
             return;
         }
         if (estado == Estado.Accion) return;

@@ -165,6 +165,7 @@ public static class ExteriorBuilder
     {
         // se reemplaza el asset completo: copiar encima (CopySerialized) dejaba en la GPU los datos viejos
         string path = Gen + nombre + ".asset";
+        NormalesSeguras.Sanear(m);   // normales nulas = NaN = destellos del Bloom
         if (AssetDatabase.LoadAssetAtPath<Mesh>(path) != null) AssetDatabase.DeleteAsset(path);
         AssetDatabase.CreateAsset(m, path);
         return m;

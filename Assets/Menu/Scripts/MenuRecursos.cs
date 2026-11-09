@@ -13,6 +13,8 @@ public class MenuRecursos : ScriptableObject
     public string[] nombresFondos;
     public AudioClip musica;
     public AudioClip sonidoMover, sonidoAceptar, sonidoAtras, sonidoAjuste;
+    [Tooltip("Muerte y despertar en la cabina")]
+    public AudioClip sonidoLatido, sonidoRespiro;
     public Color acento = new Color(0.27f, 0.86f, 0.78f);
     public string escenaJuego = "Class_rom_exemple";
     public string escenaMenu = "MenuPrincipal";

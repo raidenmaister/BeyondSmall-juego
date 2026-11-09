@@ -744,6 +744,7 @@ public static class EnemiesBuilder
             for (int sm = 0; sm < src.subMeshCount; sm++) m.SetTriangles(src.GetTriangles(sm), sm);
             m.RecalculateBounds();
             string mp = $"{MeshDir}/{d.id}_{idx}.asset";
+            NormalesSeguras.Sanear(m);   // normales nulas = NaN = destellos del Bloom
             if (AssetDatabase.LoadAssetAtPath<Mesh>(mp) != null) AssetDatabase.DeleteAsset(mp);
             AssetDatabase.CreateAsset(m, mp);
 

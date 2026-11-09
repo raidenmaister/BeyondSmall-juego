@@ -138,12 +138,17 @@ Shader "Custom/DayNightSky"
                     float z = sqrt(saturate(1 - r2));
                     float3 n = float3(uv, z);
                     float lit = smoothstep(-0.1, 0.25, dot(n, normalize(float3(_MoonPhase, 0.1, 1 - abs(_MoonPhase)))));
-                    float craters = 0.75 + 0.25 * fbm(uv * 3.5 + 4.0);
-                    moonCol = _MoonColor.rgb * disc * (0.04 + lit * craters) * 2.2;
+                    // mares oscuros (manchas grandes) + crateres pequeños + oscurecimiento hacia el borde
+                    float mares = smoothstep(0.45, 0.62, fbm(uv * 1.6 + 11.0));
+                    float crat = fbm(uv * 7.0 + 4.0);
+                    float albedo = lerp(1.0, 0.58, mares) * (0.82 + 0.3 * crat) * lerp(0.72, 1.0, z);
+                    moonCol = _MoonColor.rgb * disc * (0.03 + lit * albedo) * 1.45;
                     col = lerp(col, col * 0.15, disc * starMask * 0.3);
                 }
                 col += moonCol;
-                col += _MoonColor.rgb * pow(saturate(md), 400) * 0.35 + _MoonColor.rgb * pow(saturate(md), 30) * 0.06;
+                // halo de la luna (mas ancho y suave)
+                float moonUp = smoothstep(-0.05, 0.1, moonDir.y);
+                col += (_MoonColor.rgb * pow(saturate(md), 900) * 0.25 + _MoonColor.rgb * pow(saturate(md), 60) * 0.09 + _MoonColor.rgb * pow(saturate(md), 8) * 0.025) * moonUp;
 
                 // Disco solar (HDR para el bloom)
                 float sunDisc = smoothstep(cos(_SunSize), cos(_SunSize * 0.85), sd);

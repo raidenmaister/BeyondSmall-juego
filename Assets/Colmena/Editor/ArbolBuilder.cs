@@ -387,6 +387,7 @@ public static class ArbolBuilder
     {
         Directory.CreateDirectory(Gen);
         string path = Gen + nombre + ".asset";
+        NormalesSeguras.Sanear(m);   // normales nulas = NaN = destellos del Bloom
         if (AssetDatabase.LoadAssetAtPath<Mesh>(path) != null) AssetDatabase.DeleteAsset(path);
         AssetDatabase.CreateAsset(m, path);
         return m;
@@ -494,13 +495,21 @@ public static class ArbolBuilder
     }
 
     // hongo de repisa (crece de lado en la pared)
+    // OJO: la cara de arriba y la de abajo llevan vertices PROPIOS. Si comparten vertices, RecalculateNormals
+    // suma dos normales opuestas -> (0,0,0) -> NaN en el shader -> destellos blancos enormes por el Bloom.
     static Mesh HongoRepisa()
     {
         var v = new List<Vector3>(); var t = new List<int>();
         int n = 14;
-        v.Add(new Vector3(0f, 0.25f, 0f));
-        for (int i = 0; i <= n; i++) { float a = Mathf.PI * i / n; v.Add(new Vector3(Mathf.Cos(a) * 1.4f, 0.05f + Mathf.Sin(i * 1.7f) * 0.03f, Mathf.Sin(a) * 1.0f)); }
-        for (int i = 0; i < n; i++) { t.AddRange(new[] { 0, i + 2, i + 1 }); t.AddRange(new[] { 0, i + 1, i + 2 }); }
+        for (int lado = 0; lado < 2; lado++)
+        {
+            int c = v.Count;
+            v.Add(new Vector3(0f, 0.25f, 0f));
+            for (int i = 0; i <= n; i++) { float a = Mathf.PI * i / n; v.Add(new Vector3(Mathf.Cos(a) * 1.4f, 0.05f + Mathf.Sin(i * 1.7f) * 0.03f, Mathf.Sin(a) * 1.0f)); }
+            for (int i = 0; i < n; i++)
+                if (lado == 0) t.AddRange(new[] { c, c + i + 2, c + i + 1 });
+                else t.AddRange(new[] { c, c + i + 1, c + i + 2 });
+        }
         var m = new Mesh { name = "HongoRepisa" }; m.SetVertices(v); m.SetTriangles(t, 0); m.RecalculateNormals(); m.RecalculateBounds();
         return m;
     }

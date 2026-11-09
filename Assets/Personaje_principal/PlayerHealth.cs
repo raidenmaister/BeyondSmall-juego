@@ -47,9 +47,21 @@ public class PlayerHealth : MonoBehaviour
         }
     }
 
-    public void TakeDamage(float amount)
+    /// <summary>Daño de animales (mordidas, picaduras, veneno, proyectiles). En pacifico no hace nada.</summary>
+    public void TakeDamage(float amount) { TakeDamage(amount, true); }
+
+    /// <summary>bloqueable = false para el veneno (ya esta adentro, el escudo no sirve).</summary>
+    public void TakeDamage(float amount, bool bloqueable)
     {
-        if (IsDead || amount <= 0f) return;
+        if (!Partida.Agresivos) return;
+        if (bloqueable && Escudo.Instancia != null) amount = Escudo.Instancia.Filtrar(amount);
+        DanioEntorno(amount);
+    }
+
+    /// <summary>Daño que no viene de animales (hambre): cuenta en todas las dificultades.</summary>
+    public void DanioEntorno(float amount)
+    {
+        if (IsDead || amount <= 0f || FinalJuego.Activo) return;
 
         currentHealth = Mathf.Max(0f, currentHealth - amount);
         UpdateUI(immediate: false);

@@ -1,0 +1,166 @@
+# Pintado por zonas del personaje: en vez de proyectar el dibujo (que no coincide con la forma del modelo 3D),
+# cada zona del modelo (bata, chaleco, camisa, shorts, vendas, botas, manos...) se pinta con el color plano del dibujo.
+# Las zonas se definen sobre la vista frontal del MODELO (coordenadas U,V del dibujo) y por profundidad/lado.
+# La cabeza conserva la proyeccion alineada (cara y goggles) pero limpiada a la paleta.
+import sys, time; sys.path.insert(0, '.')
+import numpy as np
+from comun import cargar
+from PIL import Image, ImageDraw
+t0 = time.time()
+P, N, T = cargar()
+UV = np.load("uv_imagen.npy"); U, V = UV[:, 0], UV[:, 1]
+cabezaPrevia = np.load("colores_cabeza.npy")       # resultado de colores.py (cara y goggles alineados)
+nv = len(P); H, W = 1024, 848
+
+def c(*v): return np.array(v, float) / 255.
+PAL = {
+    'bata': c(236, 238, 240), 'chaleco': c(132, 96, 60), 'correa': c(84, 56, 35), 'camisa': c(222, 210, 184),
+    'shorts': c(70, 63, 50), 'venda': c(222, 211, 186), 'bota': c(142, 92, 54), 'suela': c(48, 32, 24),
+    'hebilla': c(178, 168, 138), 'piel': c(229, 190, 161), 'pelo': c(102, 88, 76), 'metal': c(68, 62, 52),
+    'forro': c(205, 208, 212), 'tinta': c(40, 34, 30),
+}
+NOMBRES = list(PAL.keys()); ID = {n: i for i, n in enumerate(NOMBRES)}
+
+# ------------------------------------------------------------------ mapa de zonas (vista frontal del modelo)
+mapa = Image.new("L", (W, H), ID['shorts'])
+d = ImageDraw.Draw(mapa)
+def poly(nombre, pts): d.polygon(pts, fill=ID[nombre])
+# brazos: manga (bata) hasta el puño, antebrazo vendado, mano
+poly('bata', [(0, 0), (W, 0), (W, 355), (0, 355)])                    # placeholder (la cabeza se pinta aparte)
+poly('bata', [(198, 360), (300, 360), (300, 500), (198, 500)])
+poly('bata', [(520, 360), (600, 360), (600, 500), (520, 500)])
+poly('venda', [(118, 380), (200, 380), (200, 500), (118, 500)])
+poly('venda', [(598, 380), (688, 380), (688, 500), (598, 500)])
+poly('piel', [(0, 380), (120, 380), (120, 500), (0, 500)])
+poly('piel', [(686, 380), (W, 380), (W, 500), (686, 500)])
+# torso: bata por fuera (paneles delanteros y faldones)
+poly('bata', [(240, 355), (375, 355), (375, 745), (345, 752), (318, 760), (298, 770), (282, 786), (240, 800)])
+poly('bata', [(438, 355), (600, 355), (600, 800), (536, 786), (520, 770), (495, 762), (468, 754), (440, 745)])
+poly('bata', [(240, 780), (306, 780), (306, 845), (240, 845)])
+poly('bata', [(523, 780), (600, 780), (600, 845), (523, 845)])
+# camisa (vendas del pecho) arriba de la abertura y chaleco debajo
+poly('camisa', [(375, 355), (438, 355), (438, 398), (426, 430), (412, 428), (375, 388)])
+poly('chaleco', [(375, 388), (412, 428), (426, 430), (438, 398), (438, 614), (424, 602), (407, 607), (392, 618), (377, 624), (375, 624)])
+# correas cruzadas del chaleco (siguen los relieves del modelo)
+poly('correa', [(375, 482), (438, 490), (438, 505), (375, 497)])
+poly('correa', [(375, 578), (438, 516), (438, 532), (375, 594)])
+poly('hebilla', [(388, 560), (402, 547), (410, 555), (396, 568)])
+for (x, y) in [(426, 452), (426, 545)]:
+    d.ellipse([x - 4, y - 4, x + 4, y + 4], fill=ID['hebilla'])        # botones
+# piernas: vendas entre los shorts y las botas; botas y suelas
+poly('venda', [(300, 798), (404, 798), (404, 850), (300, 850)])
+poly('venda', [(418, 798), (528, 798), (528, 850), (418, 850)])
+poly('bota', [(170, 845), (420, 845), (420, 1024), (170, 1024)])
+poly('bota', [(420, 840), (600, 840), (600, 1024), (420, 1024)])
+poly('suela', [(170, 958), (420, 958), (420, 1024), (170, 1024)])
+poly('suela', [(420, 948), (600, 948), (600, 1024), (420, 1024)])
+for (y0, y1) in [(866, 878), (896, 908)]:                               # correas de las botas con hebilla
+    poly('correa', [(300, y0), (395, y0 + 3), (395, y1 + 3), (300, y1)])
+    poly('correa', [(435, y0 - 4), (520, y0 - 6), (520, y1 - 6), (435, y1 - 4)])
+mapa = np.asarray(mapa)
+
+# ------------------------------------------------------------------ visibilidad frontal (z-buffer del raster)
+zb = np.load("zbuf.npy")
+K = zb.shape[1] // W
+zb = zb.reshape(H, K, W, K).min(axis=(1, 3))
+ui = np.clip(np.round(U).astype(int), 0, W - 1); vi = np.clip(np.round(V).astype(int), 0, H - 1)
+prof = P[:, 1]
+rango = prof.max() - prof.min()
+visible = prof <= zb[vi, ui] + rango * 0.02
+lab = mapa[vi, ui].astype(int)
+
+# ------------------------------------------------------------------ reglas fuera de la vista frontal
+torso = (V >= 355) & (V < 845) & (U > 238) & (U < 602)
+# lo que no se ve de frente en el torso es la bata (espalda, costados, interior)
+lab[torso & ~visible & np.isin(lab, [ID['camisa'], ID['chaleco'], ID['correa'], ID['hebilla'], ID['shorts']])] = ID['bata']
+# entre las piernas se ve el forro de la bata (muy al fondo)
+fondo = visible & torso & (V > 690) & (U > 395) & (U < 425) & (prof > np.percentile(prof[torso], 60))
+lab[fondo] = ID['forro']
+# shorts: tambien por los lados/atras a la altura de las piernas, debajo de la bata
+piernasZ = (V >= 745) & (V < 800) & ~visible & (np.abs(N[:, 1]) < 0.9)
+# (la bata cubre por atras: se deja bata)
+
+# ------------------------------------------------------------------ cabeza por zonas (geometria del modelo)
+# coordenadas cilindricas alrededor del eje de la cabeza: th (0 = frente) y zn (0 barbilla .. 1 punta del pelo)
+th, zn = np.load("cil.npy").T
+pielE = np.load("piel_estricta.npy"); pielA = np.load("piel_amplia.npy")   # crecimiento por superficie lisa
+cab = V < 362
+ath = np.abs(th)
+h = np.full(nv, ID['pelo'])
+# frente (cara): debajo del nacimiento del pelo, salvo mechones que sobresalen
+y_ = P[:, 1]
+e0 = np.minimum(np.hypot((U - 345) / 44, (V - 271) / 40), np.hypot((U - 437) / 42, (V - 271) / 40))
+frenteCab = cab & (ath < 62)
+base = frenteCab & (V > 300) & (V < 345) & (U > 330) & (U < 460) & (e0 > 1.05)
+A = np.stack([np.ones(base.sum()), U[base], V[base], U[base] ** 2, U[base] * V[base], V[base] ** 2], 1)
+coef, *_ = np.linalg.lstsq(A, y_[base], rcond=None)
+craneo = np.stack([np.ones(nv), U, V, U ** 2, U * V, V ** 2], 1) @ coef
+resid = craneo - y_
+esc = np.percentile(np.abs(resid[base]), 90) + 1e-9
+_hx = np.array([300, 312, 325, 340, 360, 380, 400, 420, 440, 457, 470, 480, 492])
+_hy = np.array([230, 206, 200, 212, 222, 227, 226, 220, 214, 208, 220, 236, 250])
+nac = np.interp(U, _hx, _hy) + 2.5 * np.sin(U * 0.21)
+h[frenteCab & (resid <= esc * 1.8) & (V >= nac)] = ID['piel']
+# lados (orejas, sienes): superficie lisa por debajo del pelo
+_t = np.array([62, 75, 90, 105, 118])
+_z = np.array([0.46, 0.42, 0.36, 0.26, 0.13])
+hl = np.interp(ath, _t, _z)
+lado = cab & (ath >= 62) & (ath <= 118)
+h[lado & pielA & (zn < hl)] = ID['piel']
+# nuca: solo la piel lisa estricta de abajo (los mechones que cuelgan son pelo)
+nuca = cab & (ath > 118)
+h[nuca & pielE & (zn < 0.12)] = ID['piel']
+h[cab & (zn < 0.03)] = ID['piel']                                       # cuello
+# goggles: marco al frente
+def elip(cx, cy, rx, ry): return np.hypot((U - cx) / rx, (V - cy) / ry)
+e = np.minimum(elip(345, 271, 40, 36), elip(437, 271, 38, 36))
+eL = np.minimum(elip(345, 271, 26, 24), elip(437, 271, 25, 24))
+gog = frenteCab & (e < 1.0) & (ath < 50)
+h[gog] = ID['metal']
+lente = frenteCab & (eL < 1.0) & (N[:, 1] < -0.55)
+h[frenteCab & (U > 383) & (U < 400) & (np.abs(V - 270) < 8) & (ath < 20)] = ID['metal']
+# piezas laterales de los goggles (lo que no es piel ni pelo a la altura de los ojos, entre el marco y la oreja)
+lat = cab & (ath >= 45) & (ath < 92) & (np.abs(zn - 0.315) < 0.055) & (h != ID['piel'])
+h[lat] = ID['metal']
+# correa: le da la vuelta a la cabeza por encima del pelo
+correa = cab & (ath >= 88) & (np.abs(zn - 0.315) < 0.028)
+h[correa] = ID['correa']
+lab[cab] = h[cab]
+# ------------------------------------------------------------------ suavizado de etiquetas por la malla (sin dientes)
+I = np.concatenate([T[:, 0], T[:, 1], T[:, 2], T[:, 1], T[:, 2], T[:, 0]])
+J = np.concatenate([T[:, 1], T[:, 2], T[:, 0], T[:, 0], T[:, 1], T[:, 2]])
+nl = len(NOMBRES)
+fijos = lente.copy()
+for it in range(4):
+    votos = np.zeros((nv, nl))
+    np.add.at(votos, (I, lab[J]), 1.0)
+    votos[np.arange(nv), lab] += 1.5                     # el propio voto pesa un poco mas
+    nuevo = votos.argmax(1)
+    lab = np.where(fijos, lab, nuevo)
+
+# ------------------------------------------------------------------ color final
+col = np.stack([PAL[NOMBRES[l]] for l in range(nl)])[lab]
+# detalle: en la cabeza conservar un poco de la luminancia original (mechones, rasgos de la cara)
+lum0 = cabezaPrevia.mean(1); lumP = col.mean(1)
+k = np.clip(lum0 / np.maximum(lumP, 1e-3), 0.75, 1.15)
+rasgos = cab & (lab == ID['piel']) & (V > 290) & (U > 330) & (U < 460)
+col[rasgos] = col[rasgos] * (0.4 + 0.6 * k[rasgos, None])
+col[lente] = cabezaPrevia[lente] * 0.8 + c(40, 70, 62) * 0.2
+# oclusion ambiental barata: concavidades (normal distinta del promedio de los vecinos) se oscurecen
+Ns = np.zeros_like(N); np.add.at(Ns, I, N[J]); Ns /= np.linalg.norm(Ns, axis=1, keepdims=True) + 1e-9
+for _ in range(2):
+    Nt = np.zeros_like(N); np.add.at(Nt, I, Ns[J]); Ns = Nt / (np.linalg.norm(Nt, axis=1, keepdims=True) + 1e-9)
+curv = np.einsum('ij,ij->i', N, Ns)
+cent = np.zeros(nv); cnt = np.zeros(nv)
+np.add.at(cent, I, 1)
+pos = np.zeros_like(P); np.add.at(pos, I, P[J]); pos /= cent[:, None]
+conc = np.einsum('ij,ij->i', pos - P, N) / (np.median(np.abs(np.einsum('ij,ij->i', pos - P, N))) * 6 + 1e-12)
+ao = np.clip(1 - np.clip(conc, 0, 1) * 0.35, 0.65, 1)
+col *= ao[:, None]
+# linea de tinta en los bordes entre zonas (estilo del dibujo)
+otra = np.zeros(nv, bool)
+np.logical_or.at(otra, I, lab[I] != lab[J])
+borde = otra & ~cab & ~np.isin(lab, [ID['forro']])
+col[borde] = col[borde] * 0.55 + PAL['tinta'] * 0.45
+np.save("colores.npy", col.astype(np.float32))
+print("listo", round(time.time() - t0, 1), "s;", {n: int((lab == ID[n]).sum()) for n in NOMBRES})

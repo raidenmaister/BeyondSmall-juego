@@ -220,7 +220,8 @@ public class CreatureAI : MonoBehaviour
         stateTime += dt;
         attackCd -= dt;
         Vector3 toPlayer = Flat(player.position - transform.position);
-        float dist = toPlayer.magnitude;
+        // pacifico: el jugador "no existe" para los bichos (no lo persiguen ni lo atacan)
+        float dist = Partida.Agresivos ? toPlayer.magnitude : 9999f;
 
         switch (kind)
         {

@@ -31,7 +31,7 @@ Shader "Custom/FireflyGlow"
             CBUFFER_END
 
             struct Attributes { float4 positionOS : POSITION; float2 uv : TEXCOORD0; };
-            struct Varyings { float4 positionCS : SV_POSITION; float2 uv : TEXCOORD0; float fog : TEXCOORD1; };
+            struct Varyings { float4 positionCS : SV_POSITION; float2 uv : TEXCOORD0; float fog : TEXCOORD1; float cerca : TEXCOORD2; };
 
             Varyings vert(Attributes v)
             {
@@ -43,6 +43,9 @@ Shader "Custom/FireflyGlow"
                 o.positionCS = TransformWorldToHClip(world);
                 o.uv = v.uv * 2 - 1;
                 o.fog = ComputeFogFactor(o.positionCS.z);
+                // muy cerca de la camara el halo llenaria la pantalla (destello blanco): se desvanece
+                float dcam = distance(center, _WorldSpaceCameraPos);
+                o.cerca = saturate((dcam - 0.8) / 2.2);
                 return o;
             }
 
@@ -51,7 +54,7 @@ Shader "Custom/FireflyGlow"
                 float r2 = dot(i.uv, i.uv);
                 float glow = exp(-r2 * 5.0) * 0.6 + exp(-r2 * 40.0) * _Core;
                 glow *= saturate(1 - r2);
-                half3 col = _Color.rgb * glow * _Intensity;
+                half3 col = _Color.rgb * glow * _Intensity * i.cerca * i.cerca;
                 // con mezcla aditiva la niebla debe llevar el color a negro, no al color de niebla
                 col = MixFogColor(col, half3(0, 0, 0), i.fog);
                 return half4(col, 1);

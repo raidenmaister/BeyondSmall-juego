@@ -215,6 +215,15 @@ public class Hormiguero : MonoBehaviour
         if (alarmaHorda != null && jugador != null) AudioSource.PlayClipAtPoint(alarmaHorda, jugador.position + Vector3.up, Ajustes.VolEfectos);
     }
 
+    /// <summary>Al cargar una partida en la que la reina ya murio: la colonia sigue furiosa, sin alarma.</summary>
+    public void RestaurarFuria()
+    {
+        if (Furia) return;
+        Furia = true;
+        timerOleada = 6f;
+        foreach (var h in hormigas.ToArray()) if (h != null) h.Enfurecer();
+    }
+
     void ActualizarFuria(Vector3 p)
     {
         if (plantillaHorda == null || puntosAparicion == null || puntosAparicion.Length == 0) return;

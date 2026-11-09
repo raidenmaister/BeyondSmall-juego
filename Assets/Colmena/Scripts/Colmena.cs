@@ -260,6 +260,13 @@ public class Colmena : MonoBehaviour
         timerRefuerzo = 2f;
     }
 
+    /// <summary>Al cargar una partida: furia y reina muerta, sin avisos en pantalla.</summary>
+    public void Restaurar(bool furia, bool reinaMuerta)
+    {
+        if (reinaMuerta) { ReinaMuerta = true; timerRefuerzo = 6f; }
+        if (furia && !Furia) { Furia = true; foreach (var a in abejas.ToArray()) if (a != null) a.Enfurecer(); }
+    }
+
     void Refuerzos(Vector3 p)
     {
         if (plantillaSoldado == null || puntosRefuerzo == null || puntosRefuerzo.Length == 0) return;

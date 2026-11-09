@@ -43,6 +43,9 @@ public class MaquinaCrecimiento : MonoBehaviour
 
     public UnityEvent alEncender;
 
+    [Tooltip("0..1: la cinematica final la sube hasta el maximo (giro, brillo, haz y zumbido)")]
+    [System.NonSerialized] public float sobrecarga;
+
     [SerializeField] int colocadas;
     public int Colocadas => colocadas;
     public bool Encendida => colocadas >= Necesarias;
@@ -92,11 +95,11 @@ public class MaquinaCrecimiento : MonoBehaviour
         if (anillosGiratorios != null)
             for (int i = 0; i < anillosGiratorios.Length; i++)
                 if (anillosGiratorios[i] != null)
-                    anillosGiratorios[i].Rotate(0f, (i % 2 == 0 ? 1f : -1f) * (6f + 70f * energia * energia) * (1f + i * 0.35f) * Time.deltaTime, 0f, Space.Self);
+                    anillosGiratorios[i].Rotate(0f, (i % 2 == 0 ? 1f : -1f) * (6f + 70f * energia * energia) * (1f + i * 0.35f) * (1f + 7f * sobrecarga) * Time.deltaTime, 0f, Space.Self);
         if (fuenteZumbido.isPlaying)
         {
-            fuenteZumbido.volume = Mathf.Lerp(0f, 0.55f, energia) * Ajustes.VolEfectos;
-            fuenteZumbido.pitch = Mathf.Lerp(0.6f, 1f, energia);
+            fuenteZumbido.volume = Mathf.Lerp(0f, 0.55f, energia) * (1f + 0.6f * sobrecarga) * Ajustes.VolEfectos;
+            fuenteZumbido.pitch = Mathf.Lerp(0.6f, 1f, energia) + 0.9f * sobrecarga;
         }
         Pintar();
     }
@@ -131,9 +134,19 @@ public class MaquinaCrecimiento : MonoBehaviour
         float alto = c.y; c.y = 0f;
         if (c.magnitude < radioInterior && alto > -1f && alto < 20f)
         {
-            if (Encendida) SurvivalUI.Indicacion(this, "La cabina tiene energia de nuevo...");
+            if (Encendida) SurvivalUI.Indicacion(this, "La cabina tiene energia de nuevo...");   // FinalJuego empieza al entrar
             else SurvivalUI.Indicacion(this, $"La cabina esta sin energia: faltan {Necesarias - colocadas} baterias verdes");
         }
+    }
+
+    /// <summary>Al cargar una partida: deja puestas n baterias, sin sonidos ni avisos.</summary>
+    public void Restaurar(int n)
+    {
+        colocadas = Mathf.Clamp(n, 0, Necesarias);
+        for (int i = 0; i < bateriasRanura.Length; i++) if (bateriasRanura[i] != null) bateriasRanura[i].SetActive(i < colocadas);
+        energia = Encendida ? 1f : 0f;
+        if (Encendida && zumbido != null && !fuenteZumbido.isPlaying) fuenteZumbido.Play();
+        Pintar();
     }
 
     /// <summary>Mete una bateria en la siguiente ranura libre.</summary>
@@ -158,7 +171,7 @@ public class MaquinaCrecimiento : MonoBehaviour
     {
         float pulso = 0.85f + 0.15f * Mathf.Sin(Time.time * (2f + 6f * energia));
         Color reposo = colorReposo * 0.6f * (0.7f + 0.3f * Mathf.Sin(Time.time * 1.3f));
-        Color activo = colorEnergia * Mathf.Lerp(0.2f, 3.2f, energia) * pulso;
+        Color activo = colorEnergia * Mathf.Lerp(0.2f, 3.2f, energia) * pulso * (1f + 2.5f * sobrecarga);
         Color general = Color.Lerp(reposo, activo, Mathf.Clamp01(energia * 1.5f + colocadas * 0.08f));
         if (emisivos != null) foreach (var r in emisivos) Emitir(r, general);
 
@@ -179,7 +192,7 @@ public class MaquinaCrecimiento : MonoBehaviour
             haz.enabled = energia > 0.01f;
             if (haz.enabled)
             {
-                Color c = colorEnergia; c.a = 0.1f * energia * pulso;
+                Color c = colorEnergia; c.a = (0.1f + 0.45f * sobrecarga) * energia * pulso;
                 mpb.Clear(); mpb.SetColor(ColorBase, c); mpb.SetColor(Emision, colorEnergia * 1.5f * energia);
                 haz.SetPropertyBlock(mpb);
             }
@@ -190,7 +203,7 @@ public class MaquinaCrecimiento : MonoBehaviour
             {
                 if (luces[i] == null) continue;
                 luces[i].color = Color.Lerp(colorReposo, colorEnergia, Mathf.Clamp01(energia * 2f));
-                luces[i].intensity = intensidadLuz[i] * Mathf.Lerp(0.12f + 0.06f * colocadas, 1f, energia) * pulso;
+                luces[i].intensity = intensidadLuz[i] * Mathf.Lerp(0.12f + 0.06f * colocadas, 1f, energia) * pulso * (1f + 2f * sobrecarga);
             }
 
         if (pantalla != null)

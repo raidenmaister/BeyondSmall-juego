@@ -1,0 +1,170 @@
+import sys, time; sys.path.insert(0,'.')
+import numpy as np
+from comun import *
+from PIL import Image
+t0=time.time()
+P,N,T = cargar(); im, mask = imagen(); H,W = mask.shape
+UV = np.load("uv_imagen.npy"); U, V = UV[:,0], UV[:,1]
+# los goggles del modelo 3D estan mas abajo, mas juntos y mas chicos que los del dibujo:
+# en esa zona de la cara se corrige la proyeccion para que coincidan (centro de lentes 3D -> dibujo)
+_gx = 414.5 + (U - 391.0) * 1.12
+_gy = 250.0 + (V - 271.0) * 1.27
+def _caida(d, r): t = np.clip(d / r, 0, 1); return 1 - t * t * (3 - 2 * t)
+_dx = np.maximum(0, np.abs(U - 391.0) - 100.0); _dy = np.maximum(0, np.abs(V - 272.0) - 38.0)
+_w = _caida(np.hypot(_dx, _dy), 28.0) * (P[:, 1] < np.percentile(P[V < 340, 1], 60))   # solo la cara de frente
+U = U * (1 - _w) + _gx * _w
+V = V * (1 - _w) + _gy * _w
+nv = len(P)
+im0 = im.copy()
+# --- holograma de los goggles: la piel que se ve a traves del rectangulo vuelve a ser piel
+yy, xx = np.mgrid[0:H, 0:W]
+rect = (xx >= 324) & (xx <= 506) & (yy >= 198) & (yy <= 306)
+lente = (np.hypot(xx - 363, yy - 250) < 31) | (np.hypot(xx - 466, yy - 250) < 30)   # solo el cristal (el marco es oscuro y se respeta)
+lum0 = im.mean(2)
+tinte = ((im[..., 0] - im[..., 1]) < 0.1) & (lum0 > 0.5)
+pielH = rect & ~lente & tinte & mask
+pielC = np.array([226, 186, 158]) / 255.
+im[pielH] = pielC * (0.94 + 0.06 * np.clip((yy[pielH] - 205) / 90.0, 0, 1))[:, None]
+# --- trazos finos de tinta en el cuerpo: cierre morfologico (max y luego min) y mezcla
+def filtro(a, r, fn):
+    o = a.copy()
+    for d in range(1, r + 1):
+        o = fn(o, np.roll(a, d, 1)); o = fn(o, np.roll(a, -d, 1))
+    a2 = o.copy()
+    for d in range(1, r + 1):
+        o = fn(o, np.roll(a2, d, 0)); o = fn(o, np.roll(a2, -d, 0))
+    return o
+cerrado = filtro(filtro(im, 3, np.maximum), 3, np.minimum)
+cuerpo = (yy >= 330)[..., None]
+im = np.where(cuerpo, cerrado * 0.75 + im * 0.25, im)
+Image.fromarray((np.clip(im, 0, 1) * 255).astype(np.uint8)).save("referencia_limpia.png")
+# --- interior lejos del contorno negro del dibujo
+interior = mask.copy()
+for _ in range(6):
+    e = interior.copy()
+    for d in (1, -1): e &= np.roll(interior, d, 0); e &= np.roll(interior, d, 1)
+    interior = e
+# --- para los costados: el punto del interior mas cercano en la misma fila, hacia el centro del cuerpo
+CX = 404
+haciaC = np.full((H, W), -1, int)
+for r_ in range(H):
+    fila = interior[r_]
+    idx = np.where(fila, np.arange(W), -1)
+    # izquierda del centro: primer interior a la derecha (incluido)
+    der = idx.copy(); der[der < 0] = 10**6
+    sig = np.minimum.accumulate(der[::-1])[::-1]
+    # derecha del centro: ultimo interior a la izquierda
+    ant = np.maximum.accumulate(idx)
+    h_ = np.where(np.arange(W) <= CX, sig, ant)
+    h_[(h_ >= 10**6) | (h_ < 0)] = -1
+    haciaC[r_] = h_
+def sst(a,b,x): t=np.clip((x-a)/(b-a),0,1); return t*t*(3-2*t)
+def muestra(u,v):
+    u=np.clip(u,0,W-1.001); v=np.clip(v,0,H-1.001); x0=np.floor(u).astype(int); y0=np.floor(v).astype(int); fx=(u-x0)[:,None]; fy=(v-y0)[:,None]
+    return im[y0,x0]*(1-fx)*(1-fy)+im[y0,x0+1]*fx*(1-fy)+im[y0+1,x0]*(1-fx)*fy+im[y0+1,x0+1]*fx*fy
+er = mask.copy()
+for d in (1,-1):
+    er &= np.roll(mask,d,0); er &= np.roll(mask,d,1)
+ui=np.clip(np.round(U).astype(int),0,W-1); vi=np.clip(np.round(V).astype(int),0,H-1)
+dentro = interior[vi,ui]
+# visibilidad (frente = -Y)
+y = P[:,1]
+def buffer(fn, ini):
+    b = np.full((H,W), ini); fn.at(b,(vi,ui),y)
+    out=b.copy()
+    for dy in (-1,0,1):
+        for dx in (-1,0,1): out = fn(out, np.roll(np.roll(b,dy,0),dx,1))
+    return out
+eps = (y.max()-y.min())*0.04
+visF = y <= buffer(np.minimum, np.inf)[vi,ui] + eps
+visB = y >= buffer(np.maximum, -np.inf)[vi,ui] - eps
+# frente: la imagen
+cF = muestra(U,V)
+# goggles pintados a mano sobre la cara (coordenadas del dibujo, ya alineadas con el modelo)
+_cara = _w > 0.5
+_d1 = np.hypot(U - 363, V - 250); _d2 = np.hypot(U - 466, V - 250)
+_d = np.minimum(_d1, _d2)
+_metal = np.array([62, 58, 50]) / 255.; _brillo = np.array([128, 120, 100]) / 255.
+_aro = _cara & (_d >= 29) & (_d < 45)
+_k = np.clip(1 - np.abs(_d - 37) / 8, 0, 1)[:, None]
+cF[_aro] = (_metal * (1 - 0.45 * _k[_aro]) + _brillo * 0.45 * _k[_aro])
+_lente = _cara & (_d < 29)
+cF[_lente] = cF[_lente] * 0.85 + np.array([40, 70, 62]) / 255. * 0.15
+_puente = _cara & (U > 404) & (U < 426) & (np.abs(V - 251) < 9)
+cF[_puente] = _metal
+wF = sst(0.3,0.65,-N[:,1]) * visF * dentro
+# espalda: deducida
+cB = cF.copy()
+pelo = np.array([96,86,76])/255.; correa=np.array([62,52,42])/255.; piel=np.array([226,186,158])/255.; bata=np.array([232,235,238])/255.
+# cabeza por detras: pelo uniforme hasta donde llega el pelo del modelo; piel solo en el cuello real
+cuello = (V>=340)&(V<365)&(np.abs(U-404)<80)
+cx, cy = np.median(P[cuello,0]), np.median(P[cuello,1])
+rad = np.hypot(P[:,0]-cx, P[:,1]-cy)
+rCuello = np.median(rad[cuello])
+cab = V < 372
+esPiel = cab & (V >= 330) & (rad < rCuello*1.22)
+esPeloAtras = cab & ~esPiel
+ang = np.arctan2(P[:,1]-cy, P[:,0]-cx)
+radial = np.stack([np.cos(ang), np.sin(ang)],1)
+cara = np.clip((N[:,0]*radial[:,0] + N[:,1]*radial[:,1]), 0, 1)
+mechon = 0.045*np.sin(ang*23 + P[:,2]*900) + 0.03*np.sin(ang*57 - P[:,2]*1700)
+tono = 0.8 + 0.2*sst(0.0, 0.8, cara) + mechon
+cB[esPeloAtras] = pelo * tono[esPeloAtras,None]
+cB[esPiel] = piel * (0.92 + 0.08*cara[esPiel,None])
+torsoAtras = (V>=360)&(V<790)&(np.abs(U-404)<135)&~((V<520)&((U<290)|(U>515)))
+sombra = 0.9 + 0.1*sst(360,520,V) - 0.06*sst(600,790,V)
+cB[torsoAtras & ~esPiel] = bata*sombra[torsoAtras & ~esPiel,None]
+cB[torsoAtras & (np.abs(U-404) < 1.6) & (V>420)] = bata*0.72
+wB = sst(0.3,0.65,N[:,1]) * visB * (dentro | cab | torsoAtras)
+# costados: color del borde interior del dibujo a la misma altura
+hc = haciaC[vi, ui]
+okS = hc >= 0
+xs = np.where(ui <= CX, hc + 8, hc - 8).astype(float)
+xs = np.where(okS, xs, U)
+cS = muestra(xs, V)
+# la cabeza por los lados: arriba pelo, la franja de los goggles es la correa
+latCab = cab & okS & (np.abs(N[:, 0]) > 0.6) & (np.abs(U - CX) > 70)   # solo los lados de verdad (no la cara ni los goggles)
+cS[latCab & (V < 232)] = pelo * 0.95
+cS[latCab & (V >= 232) & (V < 320)] = piel * 0.95          # sienes y orejas
+cS[latCab & (V >= 238) & (V < 260)] = correa               # la correa de los goggles le da la vuelta
+# los costados de las copas de los goggles: metal oscuro como el marco del dibujo (no el cristal estirado)
+copas = cab & okS & (V >= 205) & (V < 300) & (np.abs(U - CX) <= 110) & (np.abs(N[:, 0]) > 0.45) & ~latCab
+marco = np.array([70, 66, 56]) / 255.
+cS[copas] = marco
+wF = np.where(copas, wF * 0.25, wF)
+wS = np.clip(1.0 - wF - wB, 0, 1) * okS * 0.9
+tot = wF + wB + wS
+col = (cF*wF[:,None] + cB*wB[:,None] + cS*wS[:,None]) / np.maximum(tot,1e-6)[:,None]
+conf = np.clip(tot,0,1)
+print("color directo", round(time.time()-t0,1), "s; con confianza", (conf>0.5).mean())
+# relleno por difusion sobre las aristas de la malla
+I = np.concatenate([T[:,0],T[:,1],T[:,2],T[:,1],T[:,2],T[:,0]]); J = np.concatenate([T[:,1],T[:,2],T[:,0],T[:,0],T[:,1],T[:,2]])
+known = conf > 0.5
+acc = np.where(known[:,None], col, 0.0)
+for it in range(600):
+    kj = known[J].astype(float)
+    c = np.bincount(I, weights=kj, minlength=nv)
+    nuevo = (~known) & (c>0)
+    if not nuevo.any(): break
+    for ch in range(3):
+        s = np.bincount(I, weights=acc[J,ch]*kj, minlength=nv)
+        acc[nuevo,ch] = s[nuevo]/c[nuevo]
+    known = known | nuevo
+print("difusion", it, "iter; sin color", (~known).sum(), round(time.time()-t0,1), "s")
+final = col*conf[:,None] + acc*(1-conf[:,None])
+final[~known] = pelo
+# suavizar un poco las zonas que no vienen directo del dibujo (menos manchas)
+sua = (wF < 0.6)
+for _ in range(3):
+    c = np.bincount(I, minlength=nv).astype(float)
+    m = np.stack([np.bincount(I, weights=final[J, ch], minlength=nv) for ch in range(3)], 1) / np.maximum(c, 1)[:, None]
+    final[sua] = final[sua] * 0.5 + m[sua] * 0.5
+np.save("colores.npy", final.astype(np.float32))
+def vista(signo, nombre):
+    order = np.argsort(signo*-y)
+    o = np.full((H,W,3), 0.2)
+    uu = U if signo>0 else (2*404-U)
+    o[vi[order], np.clip(np.round(uu[order]).astype(int),0,W-1)] = final[order]
+    Image.fromarray((np.clip(o,0,1)*255).astype(np.uint8)).save(nombre)
+vista(1,"vista_frente.png"); vista(-1,"vista_espalda.png")
+print("listo", round(time.time()-t0,1))

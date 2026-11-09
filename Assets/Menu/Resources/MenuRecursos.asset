@@ -46,6 +46,8 @@ MonoBehaviour:
   sonidoAceptar: {fileID: 8300000, guid: ff0086d84f4fda942b694b0a1c4bdb6f, type: 3}
   sonidoAtras: {fileID: 8300000, guid: 9fa0dc0a399d764429325ac425c926be, type: 3}
   sonidoAjuste: {fileID: 8300000, guid: 763b92d0cc85ee44e94f591d5b010de5, type: 3}
+  sonidoLatido: {fileID: 8300000, guid: 5ff0f8e79bff838468b36dab1064f423, type: 3}
+  sonidoRespiro: {fileID: 8300000, guid: bca6293d6ff881240bc30d1699bef714, type: 3}
   acento: {r: 0.27, g: 0.86, b: 0.78, a: 1}
   escenaJuego: Class_rom_exemple
   escenaMenu: MenuPrincipal

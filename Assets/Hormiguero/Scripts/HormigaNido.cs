@@ -203,7 +203,7 @@ public class HormigaNido : MonoBehaviour
     void Deambular(float dt)
     {
         // soldados: atacan si el jugador se mete en su zona
-        if (rol == Rol.Soldado && jugador != null && (jugador.position - hogar).sqrMagnitude < (radioHogar + 10f) * (radioHogar + 10f))
+        if (rol == Rol.Soldado && Partida.Agresivos && jugador != null && (jugador.position - hogar).sqrMagnitude < (radioHogar + 10f) * (radioHogar + 10f))
         {
             Enfurecer();
             return;

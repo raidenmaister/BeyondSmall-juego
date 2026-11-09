@@ -327,6 +327,29 @@ public class FloorItemPromptManager : MonoBehaviour
         currentHoldTimer = 0f;
     }
 
+    /// <summary>Deja de seguir un objeto (p. ej. ya recogido en una partida cargada) y oculta su letrero.</summary>
+    public void UnregisterTrackedItem(GameObject go)
+    {
+        if (go == null) return;
+        if (floorObjects != null) floorObjects.Remove(go);
+        if (trackedItems == null) return;
+        for (int t = trackedItems.Count - 1; t >= 0; t--)
+        {
+            var item = trackedItems[t];
+            if (item == null || item.gameObject != go) continue;
+            for (int i = 0; i < promptPool.Count; i++)
+            {
+                if (promptPool[i].currentItem != item) continue;
+                promptPool[i].currentItem = null;
+                promptPool[i].targetAlpha = 0f;
+                promptPool[i].currentAlpha = 0f;
+                if (promptPool[i].root != null) promptPool[i].root.SetActive(false);
+            }
+            if (currentInteractingItem == item) { currentInteractingItem = null; currentHoldTimer = 0f; }
+            trackedItems.RemoveAt(t);
+        }
+    }
+
     private void CollectItem(TrackedItem item)
     {
         if (item == null || item.gameObject == null) return;
@@ -361,6 +384,8 @@ public class FloorItemPromptManager : MonoBehaviour
         {
             ControladorInventario.Instance.AddItem(itemId, icon, qty);
         }
+
+        Estadisticas.Actual.objetosRecogidos++;
 
         // Desactivar/remover objeto del mundo
         item.isNear = false;

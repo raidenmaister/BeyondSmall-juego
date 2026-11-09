@@ -22,8 +22,12 @@ public class FireflySwarm : MonoBehaviour
     [Header("Momento de llegada / partida")]
     [Range(0f, 1f)] public float nocheParaLlegar = 0.55f;
 
+    [Tooltip("Fraccion de luciernagas que se quedan si el jugador lleva la antorcha encendida")]
+    [Range(0f, 1f)] public float conAntorcha = 0.3f;
+
     readonly List<Firefly> luciernagas = new List<Firefly>();
-    bool activas;
+    readonly HashSet<Firefly> espantadas = new HashSet<Firefly>();
+    bool activas, antorchaAntes;
 
     void Start()
     {
@@ -66,13 +70,39 @@ public class FireflySwarm : MonoBehaviour
         {
             activas = true;
             foreach (var f in luciernagas) f.Llegar(Random.Range(0f, 10f));
+            antorchaAntes = false;          // si ya llevaba la antorcha, se espantan enseguida
         }
         else if (activas && (ciclo.EsMadrugadaOManana || ciclo.Noche < 0.3f))
         {
             // amanece: todas se van volando, escalonadas
             activas = false;
+            espantadas.Clear();
             foreach (var f in luciernagas) if (f.gameObject.activeSelf) f.Irse(Random.Range(0f, 8f));
         }
+
+        // la antorcha ya alumbra: la mayoria se aleja (primero las que acompañan al jugador) y vuelven al apagarla
+        bool antorcha = Antorcha.Encendida;
+        if (activas && antorcha != antorchaAntes)
+        {
+            if (antorcha)
+            {
+                int quedan = Mathf.RoundToInt(luciernagas.Count * conAntorcha);
+                var orden = new List<Firefly>(luciernagas);
+                orden.Sort((x, y) => (y.sigueA != null).CompareTo(x.sigueA != null));
+                for (int i = 0; i < orden.Count - quedan; i++)
+                {
+                    var f = orden[i];
+                    espantadas.Add(f);
+                    if (f.gameObject.activeSelf) f.Irse(Random.Range(0f, 2.5f));
+                }
+            }
+            else
+            {
+                foreach (var f in espantadas) f.Llegar(Random.Range(0f, 6f));
+                espantadas.Clear();
+            }
+        }
+        antorchaAntes = antorcha;
     }
 
     void OnDrawGizmosSelected()

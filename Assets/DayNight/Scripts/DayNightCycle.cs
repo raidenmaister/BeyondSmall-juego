@@ -12,6 +12,8 @@ public class DayNightCycle : MonoBehaviour
     [Header("Tiempo")]
     [Tooltip("Hora actual del juego (0-24)")]
     [Range(0f, 24f)] public float hora = 17.5f;
+    [Tooltip("Hora con la que empieza una partida nueva (las cargadas usan la hora guardada)")]
+    [Range(0f, 24f)] public float horaInicioPartida = 8f;
     [Tooltip("Minutos reales que dura un dia completo de 24 horas")]
     public float duracionDiaMinutos = 8f;
     [Tooltip("La noche pasa mas rapido que el dia si es < 1")]
@@ -30,6 +32,8 @@ public class DayNightCycle : MonoBehaviour
     public float azimut = 150f;
     [Tooltip("Inclinacion del recorrido del sol (0 = pasa justo por encima)")]
     public float inclinacion = 25f;
+    [Tooltip("Inclinacion de la orbita de la luna: mas alta = pasa mas bajo en el cielo")]
+    public float inclinacionLuna = 50f;
     [Tooltip("Luces de relleno de dia (rayos de sol, etc.). Se apagan de noche")]
     public List<Light> lucesDeDia = new List<Light>();
 
@@ -118,6 +122,10 @@ public class DayNightCycle : MonoBehaviour
 
     void Start()
     {
+        // partida nueva: de dia; partida cargada: la hora guardada (asi no se ve un salto de luz)
+        var pendiente = Partida.Pendiente;
+        hora = pendiente != null && pendiente.hora >= 0f ? pendiente.hora : horaInicioPartida;
+
         if (grillos != null && !grillos.isPlaying) grillos.Play();
         if (grillosLejanos != null && !grillosLejanos.isPlaying)
         {
@@ -162,7 +170,8 @@ public class DayNightCycle : MonoBehaviour
         Quaternion rotSol = orbita * Quaternion.Euler(angulo, 0f, 0f);
         Vector3 haciaSol = -(rotSol * Vector3.forward);
         // la luna va mas o menos opuesta al sol, con otra inclinacion
-        Quaternion rotLuna = orbita * Quaternion.Euler(angulo + 180f + 12f, 18f, 0f);
+        Quaternion orbitaLuna = Quaternion.Euler(0f, azimut + 30f, 0f) * Quaternion.Euler(0f, 0f, inclinacionLuna);
+        Quaternion rotLuna = orbitaLuna * Quaternion.Euler(angulo + 180f + 12f, 0f, 0f);
         Vector3 haciaLuna = -(rotLuna * Vector3.forward);
 
         float elev = haciaSol.y;

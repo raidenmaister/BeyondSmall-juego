@@ -272,6 +272,7 @@ public class PlayerController : MonoBehaviour
     void HandleCombatInput()
     {
         if (!isGrounded || isCrouching) return;
+        if (Escudo.Bloqueando) return;       // con el escudo arriba no se golpea
 
         if (Controles.Bajada(Controles.Accion.Atacar))
         {
@@ -444,6 +445,7 @@ public class PlayerController : MonoBehaviour
 
     void HandleBlockInput()
     {
+        if (Escudo.TieneEscudo) return;      // con escudo el bloqueo lo hace Escudo (brazo izquierdo)
         if (Controles.Bajada(Controles.Accion.Bloquear) && isGrounded && !isAttacking)
         {
             if (animator != null)

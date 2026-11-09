@@ -124,7 +124,7 @@ public class PlayerHunger : MonoBehaviour
             if (currentFood <= 0f)
             {
                 acumuladoHambre += danioPorHambre * dt;
-                if (acumuladoHambre >= 1f) { health.TakeDamage(Mathf.Floor(acumuladoHambre)); acumuladoHambre -= Mathf.Floor(acumuladoHambre); }
+                if (acumuladoHambre >= 1f) { health.DanioEntorno(Mathf.Floor(acumuladoHambre)); acumuladoHambre -= Mathf.Floor(acumuladoHambre); }
             }
             else if (FoodPercent >= umbralSaciado && health.CurrentHealth < health.MaxHealth)
             {
@@ -169,6 +169,7 @@ public class PlayerHunger : MonoBehaviour
         if (health != null) health.Heal(valor.y);
         string nombre = id == "Carne_Cocinada" ? "Carne cocinada" : "Carne cruda";
         SurvivalUI.Aviso($"{nombre}: +{valor.x:0} comida  +{valor.y:0} vida", new Color(0.65f, 1f, 0.55f));
+        Estadisticas.Actual.comidas++;
         return true;
     }
 

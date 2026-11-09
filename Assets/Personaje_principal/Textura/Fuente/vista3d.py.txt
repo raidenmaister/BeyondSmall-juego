@@ -1,0 +1,61 @@
+# Render ortografico con z-buffer real de la malla alta, coloreada con colores.npy, desde cualquier angulo.
+# uso: python vista3d.py salida.png yaw_grados [solo_cabeza 0/1] [elev]
+import sys; sys.path.insert(0, '.')
+import numpy as np
+from comun import cargar
+from PIL import Image
+
+def render(P, N, T, C, yaw, elev=0.0, cabeza=False, res=700):
+    # modelo: x derecha, y atras(+)/frente(-), z arriba. yaw 0 = desde el frente
+    a = np.radians(yaw); e = np.radians(elev)
+    # direccion de la camara hacia el modelo
+    R = np.array([[np.cos(a), np.sin(a), 0], [-np.sin(a), np.cos(a), 0], [0, 0, 1]])
+    Q = P @ R.T
+    if e:
+        Re = np.array([[1, 0, 0], [0, np.cos(e), -np.sin(e)], [0, np.sin(e), np.cos(e)]]); Q = Q @ Re.T
+    sel = np.ones(len(P), bool)
+    if cabeza: V_ = np.load("uv_imagen.npy")[:, 1]; sel = P[:, 2] > np.median(P[np.abs(V_ - 380) < 6, 2])
+    tsel = sel[T].all(1)
+    Tt = T[tsel]
+    x, z, d = Q[:, 0], Q[:, 2], Q[:, 1]
+    xs, zs = x[sel], z[sel]
+    lo = np.array([xs.min(), zs.min()]); hi = np.array([xs.max(), zs.max()])
+    esc = (res - 20) / (hi - lo).max()
+    px = (x - (lo[0] + hi[0]) / 2) * esc + res / 2
+    py = ((lo[1] + hi[1]) / 2 - z) * esc + res / 2
+    X = px[Tt]; Y = py[Tt]; Z = d[Tt]
+    zb = np.full((res, res), np.inf); tid = np.full((res, res), -1, np.int64)
+    xmin = np.floor(X.min(1)).astype(int); xmax = np.ceil(X.max(1)).astype(int)
+    ymin = np.floor(Y.min(1)).astype(int); ymax = np.ceil(Y.max(1)).astype(int)
+    tam = np.maximum(xmax - xmin, ymax - ymin) + 1
+    for s in np.unique(tam):
+        ids = np.where(tam == s)[0]
+        oy, ox = np.mgrid[0:s, 0:s]; ox = ox.ravel(); oy = oy.ravel()
+        for i0 in range(0, len(ids), 150000):
+            I = ids[i0:i0 + 150000]
+            cx = xmin[I][:, None] + ox[None] + 0.5; cy = ymin[I][:, None] + oy[None] + 0.5
+            ax, ay = X[I, 0][:, None], Y[I, 0][:, None]; bx, by = X[I, 1][:, None], Y[I, 1][:, None]; qx, qy = X[I, 2][:, None], Y[I, 2][:, None]
+            dd = (by - qy) * (ax - qx) + (qx - bx) * (ay - qy); dd = np.where(np.abs(dd) < 1e-9, 1e-9, dd)
+            w0 = ((by - qy) * (cx - qx) + (qx - bx) * (cy - qy)) / dd; w1 = ((qy - ay) * (cx - qx) + (ax - qx) * (cy - qy)) / dd; w2 = 1 - w0 - w1
+            ok = (w0 >= -1e-4) & (w1 >= -1e-4) & (w2 >= -1e-4) & (cx >= 0) & (cx < res) & (cy >= 0) & (cy < res)
+            zz = w0 * Z[I, 0][:, None] + w1 * Z[I, 1][:, None] + w2 * Z[I, 2][:, None]
+            tt = np.broadcast_to(I[:, None], cx.shape)
+            lin = (cy.astype(int) * res + cx.astype(int))[ok]; zz = zz[ok]; tt = tt[ok]
+            zf = zb.ravel(); np.minimum.at(zf, lin, zz)
+            g = zz <= zf[lin]; tid.ravel()[lin[g]] = tt[g]
+    Nt = np.cross(P[Tt[:, 1]] - P[Tt[:, 0]], P[Tt[:, 2]] - P[Tt[:, 0]]); Nt /= np.linalg.norm(Nt, axis=1, keepdims=True) + 1e-12
+    luz = np.array([-0.3, -0.7, 0.6]) @ R; luz /= np.linalg.norm(luz)
+    sh = np.abs(Nt @ luz) * 0.55 + 0.45
+    ct = C[Tt].mean(1) * sh[:, None]
+    img = np.where(tid[..., None] >= 0, ct[np.maximum(tid, 0)], 0.22)
+    return Image.fromarray((np.clip(img, 0, 1) * 255).astype(np.uint8))
+
+if __name__ == "__main__":
+    P, N, T = cargar(); C = np.load("colores.npy")
+    out = sys.argv[1]; yaws = [float(v) for v in sys.argv[2].split(",")]
+    cab = len(sys.argv) > 3 and sys.argv[3] == "1"
+    elev = float(sys.argv[4]) if len(sys.argv) > 4 else 0.0
+    ims = [render(P, N, T, C, y, elev, cab, 500) for y in yaws]
+    hoja = Image.new("RGB", (500 * len(ims), 500))
+    for i, im in enumerate(ims): hoja.paste(im, (500 * i, 0))
+    hoja.save(out)

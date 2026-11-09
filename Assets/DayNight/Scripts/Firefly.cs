@@ -138,6 +138,15 @@ public class Firefly : MonoBehaviour
         if (vel.sqrMagnitude > 0.01f && Physics.SphereCast(pos, 0.15f, vel.normalized, out var obst, 1.2f, MascaraSuelo, QueryTriggerInteraction.Ignore))
             vel = Vector3.Reflect(vel, obst.normal) * 0.7f + obst.normal * 0.4f;
 
+        // no pasar pegada a la camara (de cerca su halo deslumbra)
+        var cam = Camera.main;
+        if (cam != null)
+        {
+            Vector3 aCam = pos - cam.transform.position;
+            float dc = aCam.magnitude;
+            if (dc < 3f && dc > 0.001f) vel += aCam / dc * (3f - dc) * 6f * dt;
+        }
+
         pos += vel * dt;
 
         // mantener una altura razonable sobre el suelo (salvo cuando se va)

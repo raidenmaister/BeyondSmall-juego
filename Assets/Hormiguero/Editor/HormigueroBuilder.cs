@@ -541,6 +541,7 @@ public static class HormigueroBuilder
     {
         Directory.CreateDirectory(Gen);
         string path = Gen + nombre + ".asset";
+        NormalesSeguras.Sanear(m);   // normales nulas = NaN = destellos del Bloom
         if (AssetDatabase.LoadAssetAtPath<Mesh>(path) != null) AssetDatabase.DeleteAsset(path);
         AssetDatabase.CreateAsset(m, path);
         return m;

@@ -133,7 +133,7 @@ public class SpiderAI : MonoBehaviour
         webTimer -= dt;
         Vector3 toPlayer = player.position - transform.position;
         toPlayer.y = 0f;
-        float dist = toPlayer.magnitude;
+        float dist = Partida.Agresivos ? toPlayer.magnitude : 9999f;   // pacifico: no persigue
 
         switch (state)
         {

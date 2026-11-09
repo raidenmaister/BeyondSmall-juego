@@ -49,6 +49,7 @@ public class ItemSparkle : MonoBehaviour
         mat.mainTexture = softTex;
         pr.sharedMaterial = mat;
         pr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        pr.maxParticleSize = 0.03f;     // si la camara pasa pegada, que no llene media pantalla de blanco
         ps.Play();
     }
 }

@@ -53,6 +53,8 @@ public class MenuUI : MonoBehaviour
         public int pestana = -1;        // pestaña de opciones (-1 = no es de opciones)
         public System.Action alVolver;
         public int indice;
+        public TextMeshProUGUI descripcion;      // texto que cambia segun la fila elegida (dificultad)
+        public string[] descripciones;
     }
 
     readonly List<Pantalla> pila = new List<Pantalla>();
@@ -253,7 +255,7 @@ public class MenuUI : MonoBehaviour
         var p = new Pantalla { titulo = "", esLista = true };
         if (modo == Modo.Principal)
         {
-            p.filas.Add(Boton("JUGAR", Jugar));
+            p.filas.Add(Boton("JUGAR", AbrirPartidas));
             p.filas.Add(Boton("OPCIONES", () => AbrirOpciones(0)));
             p.filas.Add(Boton("CONTROLES", () => AbrirOpciones(2)));
             p.filas.Add(Boton("CREDITOS", AbrirCreditos));
@@ -263,10 +265,11 @@ public class MenuUI : MonoBehaviour
         else
         {
             p.filas.Add(Boton("CONTINUAR", CerrarPausa));
+            p.filas.Add(Boton("GUARDAR PARTIDA", GuardarDesdePausa));
             p.filas.Add(Boton("OPCIONES", () => AbrirOpciones(0)));
             p.filas.Add(Boton("CONTROLES", () => AbrirOpciones(2)));
-            p.filas.Add(Boton("MENU PRINCIPAL", () => Confirmar("¿Volver al menu principal?\n<size=70%><color=#9aa>Se perdera el progreso de esta partida.</color></size>", IrAlMenu)));
-            p.filas.Add(Boton("SALIR DEL JUEGO", () => Confirmar("¿Salir del juego?", Salir)));
+            p.filas.Add(Boton("MENU PRINCIPAL", () => Confirmar("¿Volver al menu principal?\n<size=70%><color=#9aa>" + TextoAlSalir() + "</color></size>", IrAlMenu)));
+            p.filas.Add(Boton("SALIR DEL JUEGO", () => Confirmar("¿Salir del juego?\n<size=70%><color=#9aa>" + TextoAlSalir() + "</color></size>", () => { GuardarAlSalir(); Salir(); })));
             p.alVolver = CerrarPausa;
         }
         ConstruirLista(p);
@@ -369,6 +372,7 @@ public class MenuUI : MonoBehaviour
             case 3:
                 p.filas.Add(Deslizador("Sensibilidad de la camara", () => Ajustes.Sensibilidad, v => Ajustes.Sensibilidad = v, 0.2f, 3f, 0.1f, v => v.ToString("0.0") + "x"));
                 p.filas.Add(Opcion("Invertir eje vertical", () => SiNo, () => Ajustes.InvertirY ? 0 : 1, k => Ajustes.InvertirY = k == 0));
+                p.filas.Add(Opcion("Autoguardado", () => NombresAutoguardado, () => System.Array.IndexOf(MinutosAutoguardado, Ajustes.AutoguardadoMin) is int x && x >= 0 ? x : 5, k => Ajustes.AutoguardadoMin = MinutosAutoguardado[k]));
                 p.filas.Add(Boton("Restablecer opciones", () => { Ajustes.Restablecer(); RefrescarValores(Actual); Sonar(recursos.sonidoAceptar); }));
                 break;
         }
@@ -378,6 +382,8 @@ public class MenuUI : MonoBehaviour
     }
 
     static readonly string[] SiNo = { "Si", "No" };
+    static readonly int[] MinutosAutoguardado = { 0, 1, 2, 3, 5, 10, 15, 20, 30 };
+    static readonly string[] NombresAutoguardado = { "Desactivado", "Cada minuto", "Cada 2 min", "Cada 3 min", "Cada 5 min", "Cada 10 min", "Cada 15 min", "Cada 20 min", "Cada 30 min" };
     static string Porcentaje(float v) { return Mathf.RoundToInt(v * 100) + "%"; }
 
     void CambiarPestana(int d)
@@ -391,6 +397,143 @@ public class MenuUI : MonoBehaviour
         pestanas[n].raiz.SetActive(true);
         pestanas[n].indice = 0;
         Resaltar(pestanas[n], true);
+    }
+
+    // ---------------------------------------------------------------- partidas (ranuras y dificultad)
+    const float AltoRanura = 190f, SepRanura = 14f;
+
+    void AbrirPartidas()
+    {
+        Sonar(recursos.sonidoAceptar);
+        var p = new Pantalla { titulo = "PARTIDAS" };
+        for (int i = 0; i < Partida.Ranuras; i++) { int r = i; p.filas.Add(Boton("Partida " + (i + 1), () => ElegirRanura(r))); }
+        p.filas.Add(Boton("Volver", () => Atras()));
+        ConstruirPanel(p, 1240, 880, false);
+        float y = 0f;
+        for (int i = 0; i < p.filas.Count; i++)
+        {
+            var f = p.filas[i];
+            bool ranura = i < Partida.Ranuras;
+            f.rt.anchoredPosition = new Vector2(0, -y);
+            f.rt.sizeDelta = new Vector2(0, ranura ? AltoRanura : 50f);
+            if (ranura) DecorarRanura(f, i);
+            y += ranura ? AltoRanura + SepRanura : 54f;
+        }
+        p.contenido.sizeDelta = new Vector2(0, y);
+        p.altoVisible = 99999f;     // todo cabe: sin desplazamiento
+        Empujar(p);
+    }
+
+    void DecorarRanura(Fila f, int r)
+    {
+        var d = Partida.Leer(r);
+        float altoMini = AltoRanura - 28f, anchoMini = altoMini * 16f / 9f;
+        var marco = Imagen("Marco", f.rt, new Color(0f, 0f, 0f, 0.55f));
+        var rm = marco.rectTransform; rm.anchorMin = rm.anchorMax = new Vector2(0, 0.5f); rm.pivot = new Vector2(0, 0.5f);
+        rm.anchoredPosition = new Vector2(22, 0); rm.sizeDelta = new Vector2(anchoMini, altoMini);
+        var ri = new GameObject("Miniatura", typeof(RectTransform)).AddComponent<RawImage>();
+        ri.transform.SetParent(rm, false); ri.raycastTarget = false;
+        var rr = ri.rectTransform; Estirar(rr); rr.offsetMin = new Vector2(2, 2); rr.offsetMax = new Vector2(-2, -2);
+        var tex = d != null ? Partida.Miniatura(r) : null;
+        if (tex != null) ri.texture = tex;
+        else
+        {
+            ri.color = new Color(0.08f, 0.1f, 0.12f);
+            var v = Texto("Vacia", rm, d != null ? "SIN IMAGEN" : "+", d != null ? 22 : 64, TextAlignmentOptions.Center, recursos.fuenteMenu);
+            Estirar(v.rectTransform); v.color = new Color(1, 1, 1, 0.25f);
+        }
+        float x0 = 22f + anchoMini + 30f;
+        var dif = d != null ? (Dificultad)d.dificultad : Dificultad.Normal;
+        f.etiqueta.text = d != null
+            ? "PARTIDA " + (r + 1) + "   <size=70%><color=" + Partida.ColorHex(dif) + ">" + Partida.Nombre(dif).ToUpperInvariant() + "</color>" + (d.completada ? "   <color=#ffd070>COMPLETADA</color>" : "") + "</size>"
+            : "PARTIDA " + (r + 1) + "   <size=70%><color=#ffffff66>VACIA</color></size>";
+        f.etiqueta.fontSize = 36;
+        var re = f.etiqueta.rectTransform; re.anchorMin = new Vector2(0, 1); re.anchorMax = new Vector2(1, 1); re.pivot = new Vector2(0, 1);
+        re.offsetMin = new Vector2(x0, -66); re.offsetMax = new Vector2(-20, -16);
+        string det = d != null
+            ? "<color=#46dcc8>Tiempo jugado</color>   " + Partida.Tiempo(d.tiempo) +
+              "\n<color=#46dcc8>Guardada</color>   " + d.fecha +
+              (string.IsNullOrEmpty(d.lugar) ? "" : "\n<color=#46dcc8>Lugar</color>   " + d.lugar)
+            : "Ranura libre. Eligela para empezar una partida nueva\ny escoger la dificultad.";
+        var t = Texto("Detalle", f.rt, det, 25, TextAlignmentOptions.TopLeft, recursos.fuenteTexto);
+        var rt = t.rectTransform; rt.anchorMin = Vector2.zero; rt.anchorMax = Vector2.one; rt.offsetMin = new Vector2(x0, 14); rt.offsetMax = new Vector2(-20, -70);
+        t.color = new Color(0.85f, 0.88f, 0.88f, d != null ? 0.95f : 0.6f);
+        t.lineSpacing = 8f;
+    }
+
+    void ElegirRanura(int r)
+    {
+        if (Partida.Existe(r)) AbrirRanura(r);
+        else AbrirDificultad(r);
+    }
+
+    void AbrirRanura(int r)
+    {
+        Sonar(recursos.sonidoAceptar);
+        var p = new Pantalla { titulo = "PARTIDA " + (r + 1) };
+        p.filas.Add(Boton("Continuar", () =>
+        {
+            if (Partida.Continuar(r)) CargarJuego();
+            else Confirmar("No se pudo leer esta partida.\n<size=70%><color=#9aa>¿Borrarla?</color></size>", () => { Partida.Borrar(r); RefrescarPartidas(); });
+        }));
+        p.filas.Add(Boton("Nueva partida", () => Confirmar("¿Empezar de nuevo en la Partida " + (r + 1) + "?\n<size=70%><color=#9aa>Se borrara lo que tenias guardado.</color></size>", () => AbrirDificultad(r))));
+        p.filas.Add(Boton("Borrar partida", () => Confirmar("¿Borrar la Partida " + (r + 1) + "?\n<size=70%><color=#9aa>No se puede deshacer.</color></size>", () => { Partida.Borrar(r); RefrescarPartidas(); })));
+        p.filas.Add(Boton("Volver", () => Atras()));
+        ConstruirPanel(p, 720, 420, false);
+        Empujar(p);
+    }
+
+    void AbrirDificultad(int r)
+    {
+        Sonar(recursos.sonidoAceptar);
+        var p = new Pantalla { titulo = "DIFICULTAD" };
+        var difs = new[] { Dificultad.Pacifico, Dificultad.Normal, Dificultad.Dificil, Dificultad.Extremo };
+        var desc = new List<string>();
+        foreach (var d in difs)
+        {
+            var dd = d;
+            p.filas.Add(Boton(Partida.Nombre(d), () => { Partida.Nueva(r, dd); CargarJuego(); }));
+            desc.Add("<color=" + Partida.ColorHex(d) + "><b>" + Partida.Nombre(d).ToUpperInvariant() + "</b></color>\n" + Partida.Descripcion(d));
+        }
+        p.filas.Add(Boton("Volver", () => Atras()));
+        desc.Add("");
+        ConstruirPanel(p, 980, 720, false);
+        for (int i = 0; i < difs.Length; i++) p.filas[i].etiqueta.text = "<color=" + Partida.ColorHex(difs[i]) + ">" + Partida.Nombre(difs[i]).ToUpperInvariant() + "</color>";
+        var caja = (RectTransform)p.raiz.transform.Find("Caja");
+        var t = Texto("Descripcion", caja, "", 27, TextAlignmentOptions.TopLeft, recursos.fuenteTexto);
+        var rt = t.rectTransform; rt.anchorMin = new Vector2(0, 0); rt.anchorMax = new Vector2(1, 0); rt.pivot = new Vector2(0.5f, 0);
+        rt.anchoredPosition = new Vector2(0, 66); rt.sizeDelta = new Vector2(-100, 190);
+        t.color = new Color(0.86f, 0.9f, 0.9f); t.lineSpacing = 6f;
+        var linea = Imagen("Linea", caja, new Color(1, 1, 1, 0.12f));
+        var rl = linea.rectTransform; rl.anchorMin = new Vector2(0, 0); rl.anchorMax = new Vector2(1, 0); rl.pivot = new Vector2(0.5f, 0); rl.anchoredPosition = new Vector2(0, 268); rl.sizeDelta = new Vector2(-80, 2);
+        p.descripcion = t; p.descripciones = desc.ToArray();
+        p.indice = 1;      // normal
+        Empujar(p);
+    }
+
+    /// <summary>Vuelve a construir la lista de partidas (despues de borrar una).</summary>
+    void RefrescarPartidas()
+    {
+        while (pila.Count > 1) { var q = Actual; pila.RemoveAt(pila.Count - 1); if (q.raiz != null) Destroy(q.raiz); }
+        AbrirPartidas();
+    }
+
+    void GuardarDesdePausa()
+    {
+        var g = GestorPartida.Instancia;
+        if (g != null) g.GuardarManual();
+    }
+
+    static string TextoAlSalir()
+    {
+        if (Partida.RanuraActual < 0) return "Es una partida de prueba: no se guardara.";
+        return "Se guardara la partida.";
+    }
+
+    static void GuardarAlSalir()
+    {
+        var g = GestorPartida.Instancia;
+        if (g != null && !GestorPartida.Muerto) g.Guardar(false);
     }
 
     // ---------------------------------------------------------------- creditos y confirmacion
@@ -717,7 +860,7 @@ public class MenuUI : MonoBehaviour
     {
         ActualizarFps();
         if (modo == Modo.Principal) ActualizarFondo();
-        else ActualizarPausa();
+        else if (ActualizarPausa()) { ActualizarVisuales(); return; }   // el mismo Esc que la abre no debe cerrarla
         if (!abierto || ocupado) { ActualizarVisuales(); return; }
 
         if (esperandoTecla) { CapturarTecla(); ActualizarVisuales(); return; }
@@ -769,6 +912,8 @@ public class MenuUI : MonoBehaviour
     {
         var p = Actual;
         if (p == null) return;
+        if (p.descripcion != null && p.descripciones != null)
+            p.descripcion.text = p.indice >= 0 && p.indice < p.descripciones.Length ? p.descripciones[p.indice] : "";
         float k = 1f - Mathf.Exp(-DT * 18f);
         for (int i = 0; i < p.filas.Count; i++)
         {
@@ -853,7 +998,7 @@ public class MenuUI : MonoBehaviour
     }
 
     // ================================================================== acciones
-    void Jugar()
+    void CargarJuego()
     {
         if (ocupado) return;
         ocupado = true;
@@ -863,7 +1008,6 @@ public class MenuUI : MonoBehaviour
     IEnumerator RutinaJugar()
     {
         Ajustes.Guardar();
-        Ajustes.IntroPendiente = true;
         float v0 = musica.volume;
         for (float t = 0f; t < 1f; t += DT / 1.3f)
         {
@@ -900,15 +1044,17 @@ public class MenuUI : MonoBehaviour
     // ---------------------------------------------------------------- pausa
     bool bloqueadoAntes;
 
-    void ActualizarPausa()
+    /// <summary>Abre la pausa con Esc. Devuelve true si la abrio en este cuadro.</summary>
+    bool ActualizarPausa()
     {
-        if (abierto || ocupado) return;
-        if (!Input.GetKeyDown(KeyCode.Escape)) return;
-        if (IntroDespertar.Activa) return;
+        if (abierto || ocupado) return false;
+        if (!Input.GetKeyDown(KeyCode.Escape)) return false;
+        if (IntroDespertar.Activa || GestorPartida.Muerto || MapaUI.BloqueaPausa || FinalJuego.Activo) return false;
         var pc = FindAnyObjectByType<PlayerController>();
-        if (pc != null && pc.InventarioAbierto) return;
-        if (ControladorInventario.Instance != null && ControladorInventario.Instance.IsOpen) return;
+        if (pc != null && pc.InventarioAbierto) return false;
+        if (ControladorInventario.Instance != null && ControladorInventario.Instance.IsOpen) return false;
         AbrirPausa();
+        return true;
     }
 
     void AbrirPausa()
@@ -921,8 +1067,10 @@ public class MenuUI : MonoBehaviour
         if (pila.Count == 0) AbrirPrincipal();
         Actual.indice = 0;
         Sonar(recursos.sonidoAceptar, 0.9f);
-        StartCoroutine(FundirMenu(0f, 1f));
+        if (fundiendo != null) StopCoroutine(fundiendo);
+        fundiendo = StartCoroutine(FundirMenu(0f, 1f));
     }
+    Coroutine fundiendo;
 
     void CerrarPausa()
     {
@@ -935,7 +1083,8 @@ public class MenuUI : MonoBehaviour
         Time.timeScale = 1f; AudioListener.pause = false;
         Controles.Bloqueado = bloqueadoAntes;
         Cursor.lockState = CursorLockMode.Locked; Cursor.visible = false;
-        StartCoroutine(FundirMenu(1f, 0f));
+        if (fundiendo != null) StopCoroutine(fundiendo);
+        fundiendo = StartCoroutine(FundirMenu(1f, 0f));
     }
 
     IEnumerator FundirMenu(float de, float a)
@@ -954,6 +1103,7 @@ public class MenuUI : MonoBehaviour
     IEnumerator RutinaIrAlMenu()
     {
         Ajustes.Guardar();
+        GuardarAlSalir();
         for (float t = 0f; t < 1f; t += DT / 0.8f) { fundido.color = new Color(0, 0, 0, t); yield return null; }
         Time.timeScale = 1f; AudioListener.pause = false; Controles.Bloqueado = false;
         SceneManager.LoadScene(recursos.escenaMenu);

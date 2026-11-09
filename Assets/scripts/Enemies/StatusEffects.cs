@@ -36,6 +36,13 @@ public class StatusEffects : MonoBehaviour
         s.slowUntil = Mathf.Max(s.slowUntil, Time.time + seconds);
     }
 
+    /// <summary>Quita veneno y lentitud (al revivir).</summary>
+    public static void Limpiar()
+    {
+        if (instance == null) return;
+        instance.poisonUntil = 0f; instance.slowUntil = 0f;
+    }
+
     public static void Poison(float damagePerSecond, float seconds)
     {
         var s = Get();
@@ -57,7 +64,7 @@ public class StatusEffects : MonoBehaviour
         if (poisonTick >= 1f)
         {
             poisonTick -= 1f;
-            health.TakeDamage(poisonDps);
+            health.TakeDamage(poisonDps, false);
         }
     }
 

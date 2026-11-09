@@ -1,0 +1,63 @@
+import sys; sys.path.insert(0,'.')
+import numpy as np
+from comun import *
+from PIL import Image
+P,N,T = cargar(); im, mask = imagen(); H,W = mask.shape
+P = P.copy(); P[:,0] *= -1          # la derecha del personaje sale a la izquierda de la imagen
+x0,x1 = P[:,0].min(), P[:,0].max(); z0,z1 = P[:,2].min(), P[:,2].max()
+sx = (773-24)/(x1-x0); sy = (992-59)/(z1-z0); tx = 24 - x0*sx; ty = 59 + z1*sy
+def iou0(p):
+    s = dil(silueta(P,*p),2); return (s&mask).sum()/(s|mask).sum()
+g=[sx,sy,tx,ty]; b0=iou0(g); step=[sx*0.04,sy*0.04,8,8]
+for it in range(60):
+    mej=False
+    for i in range(4):
+        for sg in (1,-1):
+            q=list(g); q[i]+=sg*step[i]
+            if i==0: q[2]=g[2]-(q[0]-g[0])*(x0+x1)/2
+            if i==1: q[3]=g[3]+(q[1]-g[1])*(z0+z1)/2
+            s=iou0(q)
+            if s>b0: b0,g,mej=s,q,True
+    if not mej:
+        step=[x*0.5 for x in step]
+        if step[2]<0.3: break
+print("global", round(b0,3))
+u0 = g[2] + P[:,0]*g[0]; v0 = g[3] - P[:,2]*g[1]
+def splat(u,v):
+    m = np.zeros((H,W),bool); ui=np.round(u).astype(int); vi=np.round(v).astype(int)
+    ok=(ui>=0)&(ui<W)&(vi>=0)&(vi<H); m[vi[ok],ui[ok]]=True; return m
+reg = {'cabeza': (v0 < 360), 'brazoI': (v0 >= 360) & (v0 < 520) & (u0 < 290), 'brazoD': (v0 >= 360) & (v0 < 520) & (u0 > 515),
+       'pieI': (v0 >= 830) & (u0 < 400), 'pieD': (v0 >= 830) & (u0 >= 400)}
+reg['torso'] = ~(reg['cabeza']|reg['brazoI']|reg['brazoD']|reg['pieI']|reg['pieD'])
+ventana = {'cabeza': (slice(0,380), slice(0,W)), 'brazoI': (slice(370,520), slice(0,300)), 'brazoD': (slice(370,520), slice(505,W)),
+           'pieI': (slice(830,H), slice(0,400)), 'pieD': (slice(830,H), slice(400,W)), 'torso': (slice(340,850), slice(260,560))}
+params = {}
+for nombre, sel in reg.items():
+    uu, vv = u0[sel], v0[sel]; cu, cv = uu.mean(), vv.mean(); ys, xs = ventana[nombre]
+    def score(p):
+        s, ox, oy, sy_ = p
+        m = dil(splat(cu + (uu-cu)*s + ox, cv + (vv-cv)*sy_ + oy), 2)
+        a = m[ys, xs]; b = mask[ys, xs]
+        return (a&b).sum()/max(1,(a|b).sum())
+    best = [1.,0.,0.,1.]; b = score(best); step=[0.05,8,8,0.05]
+    for it in range(80):
+        mej=False
+        for i in range(4):
+            for sg in (1,-1):
+                q=list(best); q[i]+=sg*step[i]; s=score(q)
+                if s>b: b,best,mej=s,q,True
+        if not mej:
+            step=[x*0.5 for x in step]
+            if step[1]<0.4: break
+    params[nombre]=(cu,cv,*best)
+    print(nombre, "iou", round(b,3))
+def sig(x, k=12.): return 1/(1+np.exp(-x/k))
+Wts = {'cabeza':sig(360 - v0), 'brazoI':sig(v0-360)*sig(520-v0)*sig(290-u0), 'brazoD':sig(v0-360)*sig(520-v0)*sig(u0-515),
+       'pieI':sig(v0-830)*sig(400-u0), 'pieD':sig(v0-830)*sig(u0-400)}
+Wts['torso'] = np.clip(1 - sum(Wts.values()), 0, None)
+tot = sum(Wts.values())
+U = np.zeros_like(u0); V = np.zeros_like(v0)
+for n,(cu,cv,s,ox,oy,sy_) in params.items():
+    w = Wts[n]/tot; U += w*(cu + (u0-cu)*s + ox); V += w*(cv + (v0-cv)*sy_ + oy)
+np.save("uv_imagen.npy", np.stack([U,V],1))
+m = dil(splat(U,V),1); print("iou total", round((m&mask).sum()/(m|mask).sum(),3))

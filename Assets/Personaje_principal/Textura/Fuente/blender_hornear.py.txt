@@ -1,0 +1,83 @@
+import bpy, bmesh, numpy as np, sys, time, os
+D = os.path.dirname(os.path.abspath(__file__))
+t0 = time.time()
+def log(*a): print("[HORNEAR]", round(time.time()-t0,1), *a, flush=True)
+nv, nt = np.fromfile(D+"/malla.bin", dtype=np.int32, count=2)
+d = np.fromfile(D+"/malla.bin", dtype=np.float32, offset=8, count=nv*6)
+P = d[:nv*3].reshape(-1,3)
+T = np.fromfile(D+"/malla.bin", dtype=np.int32, offset=8+nv*24, count=nt*3).reshape(-1,3)
+C = np.load(D+"/colores.npy")
+OBJETIVO = int(sys.argv[sys.argv.index("--")+1]) if "--" in sys.argv else 80000
+RES = 4096
+
+for o in list(bpy.data.objects): bpy.data.objects.remove(o)
+# Unity es de mano izquierda: invertir el orden de los triangulos para que las normales queden hacia afuera
+Tb = T   # mismo orden: Blender y Unity calculan la normal igual (cross(b-a, c-a))
+me = bpy.data.meshes.new("Alta")
+me.vertices.add(nv); me.vertices.foreach_set("co", P.ravel())
+me.loops.add(nt*3); me.loops.foreach_set("vertex_index", Tb.ravel())
+me.polygons.add(nt); me.polygons.foreach_set("loop_start", np.arange(0, nt*3, 3)); 
+me.update(calc_edges=True); me.validate()
+me.shade_smooth()
+attr = me.color_attributes.new("Col", 'FLOAT_COLOR', 'POINT')
+rgba = np.concatenate([C, np.ones((nv,1),np.float32)],1)
+attr.data.foreach_set("color_srgb", rgba.ravel())
+alta = bpy.data.objects.new("Alta", me); bpy.context.scene.collection.objects.link(alta)
+log("malla alta", nv, nt)
+
+# copia reducida
+baja = alta.copy(); baja.data = alta.data.copy(); baja.name = "Baja"; bpy.context.scene.collection.objects.link(baja)
+mod = baja.modifiers.new("dec", 'DECIMATE'); mod.ratio = OBJETIVO / nt; mod.use_collapse_triangulate = True
+bpy.context.view_layer.objects.active = baja
+for o in bpy.context.scene.objects: o.select_set(o == baja)
+bpy.ops.object.modifier_apply(modifier="dec")
+baja.data.color_attributes.remove(baja.data.color_attributes["Col"])
+log("reducida", len(baja.data.vertices), len(baja.data.polygons))
+
+# UVs
+bpy.ops.object.mode_set(mode='EDIT'); bpy.ops.mesh.select_all(action='SELECT')
+bpy.ops.uv.smart_project(angle_limit=1.4, island_margin=0.002, area_weight=0.0, correct_aspect=True, scale_to_bounds=False)
+bpy.ops.uv.pack_islands(margin=0.002, rotate=True)
+bpy.ops.object.mode_set(mode='OBJECT')
+log("uv listo")
+
+# materiales
+img = bpy.data.images.new("Textura", RES, RES, alpha=False, float_buffer=False)
+mb = bpy.data.materials.new("MatBaja"); mb.use_nodes = True
+n = mb.node_tree.nodes; tex = n.new("ShaderNodeTexImage"); tex.image = img; n.active = tex
+baja.data.materials.append(mb)
+ma = bpy.data.materials.new("MatAlta"); ma.use_nodes = True
+na = ma.node_tree.nodes; 
+for x in list(na): na.remove(x)
+ca = na.new("ShaderNodeVertexColor"); ca.layer_name = "Col"
+em = na.new("ShaderNodeEmission"); out = na.new("ShaderNodeOutputMaterial")
+ma.node_tree.links.new(ca.outputs["Color"], em.inputs["Color"]); ma.node_tree.links.new(em.outputs["Emission"], out.inputs["Surface"])
+alta.data.materials.append(ma)
+
+sc = bpy.context.scene; sc.render.engine = 'CYCLES'; sc.cycles.device = 'CPU'; sc.cycles.samples = 1
+b = sc.render.bake; b.use_selected_to_active = True; b.cage_extrusion = 0.00015; b.max_ray_distance = 0.0006; b.margin = 24; b.margin_type = 'EXTEND'
+for o in sc.objects: o.select_set(True)
+bpy.context.view_layer.objects.active = baja
+bpy.ops.object.bake(type='EMIT')
+log("horneado")
+img.filepath_raw = D + "/textura.png"; img.file_format = 'PNG'; img.save()
+
+# exportar malla reducida (orden de Unity)
+m = baja.data; m.calc_loop_triangles()
+uvl = m.uv_layers.active.data
+nt2 = len(m.loop_triangles)
+lv = np.zeros(nt2*3, np.int64); ll = np.zeros(nt2*3, np.int64)
+m.loop_triangles.foreach_get("vertices", lv); m.loop_triangles.foreach_get("loops", ll)
+uv = np.zeros(len(m.loops)*2, np.float32); uvl.foreach_get("uv", uv); uv = uv.reshape(-1,2)
+co = np.zeros(len(m.vertices)*3, np.float32); m.vertices.foreach_get("co", co); co = co.reshape(-1,3)
+nr = np.zeros(len(m.vertices)*3, np.float32); m.vertices.foreach_get("normal", nr); nr = nr.reshape(-1,3)
+claves = np.stack([lv, np.round(uv[ll,0]*1e5).astype(np.int64), np.round(uv[ll,1]*1e5).astype(np.int64)],1)
+unicas, inv = np.unique(claves, axis=0, return_inverse=True)
+inv = inv.ravel()
+primero = np.zeros(len(unicas), np.int64); primero[inv] = np.arange(len(inv))
+V = co[lv[primero]]; Nn = nr[lv[primero]]; UVo = uv[ll[primero]]
+tris = inv.reshape(-1,3).astype(np.int32)
+with open(D + "/baja.bin", "wb") as f:
+    np.array([len(V), len(tris)], np.int32).tofile(f)
+    V.astype(np.float32).tofile(f); (-Nn if False else Nn).astype(np.float32).tofile(f); UVo.astype(np.float32).tofile(f); tris.tofile(f)
+log("exportado", len(V), len(tris))

@@ -1,0 +1,30 @@
+# Piel de la cabeza por crecimiento de region: desde la cara y el cuello se extiende por la superficie lisa
+# y se detiene en los pliegues (donde empiezan los mechones o el marco de los goggles).
+import sys; sys.path.insert(0,'.')
+import numpy as np
+from comun import cargar
+P,N,T=cargar(); nv=len(P)
+UV=np.load("uv_imagen.npy"); U,V=UV[:,0],UV[:,1]
+d=np.load("rugosidad.npy")
+umbral=float(sys.argv[1]) if len(sys.argv)>1 else np.percentile(d,55)
+cab=V<362
+fc=cab&(P[:,1]<np.percentile(P[V<355,1],55))
+def elip(cx,cy,rx,ry): return np.hypot((U-cx)/rx,(V-cy)/ry)
+e=np.minimum(elip(345,271,44,40),elip(437,271,42,40))
+semilla=fc&(V>298)&(V<345)&(U>335)&(U<455)&(e>1.1)
+semilla|=cab&(V>345)&(V<358)
+I=np.concatenate([T[:,0],T[:,1],T[:,2],T[:,1],T[:,2],T[:,0]]); J=np.concatenate([T[:,1],T[:,2],T[:,0],T[:,0],T[:,1],T[:,2]])
+ok=cab&(d<umbral)
+piel=semilla.copy()
+for it in range(3000):
+    nuevo=np.zeros(nv,bool); nuevo[I[piel[J]]]=True
+    nuevo&=ok&~piel
+    if not nuevo.any(): break
+    piel|=nuevo
+# cerrar huequitos (vertices sueltos rodeados de piel)
+for _ in range(3):
+    s=np.bincount(I,weights=piel[J].astype(float),minlength=nv); c=np.bincount(I,minlength=nv)
+    piel=(piel|((s/np.maximum(c,1))>0.6))&cab
+    piel&=~((s/np.maximum(c,1))<0.25)
+np.save("piel_cabeza.npy",piel)
+print("iter",it,"piel",piel.sum(),"umbral",umbral)

@@ -28,8 +28,8 @@ Material:
     - _CloudCover: 0.45
     - _CloudSpeed: 0.004
     - _Exposure: 1
-    - _MoonPhase: 0.35
-    - _MoonSize: 0.045
+    - _MoonPhase: 0.18
+    - _MoonSize: 0.065
     - _StarIntensity: 0
     - _StarRotation: 4.5814896
     - _SunSize: 0.035
@@ -39,7 +39,7 @@ Material:
     - _CloudShade: {r: 0.46778852, g: 0.38088685, b: 0.45619667, a: 1}
     - _GroundColor: {r: 0.3202649, g: 0.19959351, b: 0.14483312, a: 0.35}
     - _MoonColor: {r: 0.9, g: 0.93, b: 1, a: 1}
-    - _MoonDir: {r: -0.2035513, g: -0.059085805, b: 0.9772796, a: 0}
+    - _MoonDir: {r: 0.06010303, g: 0.05043235, b: 0.9969171, a: 0}
     - _SkyHorizon: {r: 0.91504264, g: 0.5702672, b: 0.4138089, a: 1}
     - _SkyTop: {r: 0.22530982, g: 0.31637293, b: 0.60619664, a: 1}
     - _SunColor: {r: 1, g: 0.61947125, b: 0.409295, a: 1}

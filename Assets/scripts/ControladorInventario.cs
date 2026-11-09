@@ -25,6 +25,7 @@ public class ControladorInventario : MonoBehaviour
     public InventorySlotUI craftResultSlot;
 
     public bool IsOpen => inventarioUI != null && inventarioUI.activeSelf;
+    bool pistaReceta;
 
     private void Awake()
     {
@@ -53,6 +54,13 @@ public class ControladorInventario : MonoBehaviour
         if (Controles.Bajada(Controles.Accion.Inventario))
         {
             ToggleInventario();
+        }
+        if (IsOpen) Crafteo.Actualizar(this);
+        // pista de la receta la primera vez que tienes carbon o un palo
+        if (!pistaReceta && (GetTotalCount("Carbon") > 0 || GetTotalCount("Palo") > 0))
+        {
+            pistaReceta = true;
+            Aviso.Mostrar("Carbon + palo = antorcha\n<size=60%>Abre el inventario y ponlos en CREAR ARMA</size>", new Color(1f, 0.75f, 0.35f), 5f);
         }
     }
 

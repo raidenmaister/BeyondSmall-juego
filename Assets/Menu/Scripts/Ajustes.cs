@@ -23,6 +23,8 @@ public static class Ajustes
     public static int LimiteFps = 0;            // 0 = sin limite
     public static bool MostrarFps;
     public static bool Subtitulos = true;
+    /// <summary>Minutos entre autoguardados (0 = desactivado).</summary>
+    public static int AutoguardadoMin = 10;
 
     /// <summary>Lo activa el menu al pulsar Jugar: la escena del juego empieza con la intro de "despertar".</summary>
     public static bool IntroPendiente = true;
@@ -82,6 +84,7 @@ public static class Ajustes
         LimiteFps = PlayerPrefs.GetInt("aj_fps", 0);
         MostrarFps = PlayerPrefs.GetInt("aj_verFps", 0) == 1;
         Subtitulos = PlayerPrefs.GetInt("aj_subs", 1) == 1;
+        AutoguardadoMin = PlayerPrefs.GetInt("aj_autoguardado", 10);
     }
 
     public static void Guardar()
@@ -100,6 +103,7 @@ public static class Ajustes
         PlayerPrefs.SetInt("aj_fps", LimiteFps);
         PlayerPrefs.SetInt("aj_verFps", MostrarFps ? 1 : 0);
         PlayerPrefs.SetInt("aj_subs", Subtitulos ? 1 : 0);
+        PlayerPrefs.SetInt("aj_autoguardado", AutoguardadoMin);
         PlayerPrefs.Save();
     }
 
@@ -107,7 +111,7 @@ public static class Ajustes
     {
         VolGeneral = 0.9f; VolMusica = 0.7f; VolEfectos = 0.9f; VolAmbiente = 0.8f;
         Sensibilidad = 1f; InvertirY = false; Brillo = 0f;
-        VSync = true; LimiteFps = 0; MostrarFps = false; Subtitulos = true;
+        VSync = true; LimiteFps = 0; MostrarFps = false; Subtitulos = true; AutoguardadoMin = 10;
         Aplicar(); Guardar();
     }
 

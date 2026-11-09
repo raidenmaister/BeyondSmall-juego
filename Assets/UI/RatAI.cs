@@ -391,7 +391,7 @@ public class RatAI : MonoBehaviour
         // 1. Detectar el momento exacto en que la barra de vida se hace visible
         bool isHealthBarVisible = healthBarUI != null && healthBarUI.IsPlayerInRange;
 
-        if (isHealthBarVisible && !wasHealthBarVisible)
+        if (isHealthBarVisible && !wasHealthBarVisible && Partida.Agresivos)
         {
             // Acaba de aparecer la barra de vida -> iniciar persecución
             StartChasing();

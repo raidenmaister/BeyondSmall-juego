@@ -15,6 +15,8 @@ public class RatHealth : MonoBehaviour
 
     public System.Action<float, float> OnHealthChanged;
     public System.Action OnDeath;
+    /// <summary>Cualquier bicho que muere (estadisticas de la partida).</summary>
+    public static System.Action<RatHealth> AlguienMurio;
     /// <summary>Permite a la IA reducir o anular el daño (armadura, enterrada...).</summary>
     public System.Func<float, float> DamageFilter;
 
@@ -35,6 +37,7 @@ public class RatHealth : MonoBehaviour
         if (IsDead)
         {
             OnDeath?.Invoke();
+            AlguienMurio?.Invoke(this);
         }
     }
 
@@ -44,6 +47,19 @@ public class RatHealth : MonoBehaviour
 
         currentHealth = Mathf.Min(maxHealth, currentHealth + amount);
         OnHealthChanged?.Invoke(currentHealth, maxHealth);
+    }
+
+    /// <summary>Escala la vida sin avisar a nadie (dificultad); no despierta jefes ni dispara eventos.</summary>
+    public void EscalarVida(float k)
+    {
+        if (k <= 0f || Mathf.Approximately(k, 1f)) return;
+        maxHealth *= k; currentHealth *= k;
+    }
+
+    /// <summary>Restaura la vida guardada sin disparar eventos.</summary>
+    public void FijarVida(float actual)
+    {
+        currentHealth = Mathf.Clamp(actual, 0.01f, maxHealth);
     }
 
     public void SetHealth(float current, float max)

@@ -90,7 +90,7 @@ public class ReinaHormiga : MonoBehaviour
         AnimarVisual(dt);
         if (estado == Estado.Dormida)
         {
-            if ((jugador.position - hogar).magnitude < radioDespertar) Despertar();
+            if (Partida.Agresivos && (jugador.position - hogar).magnitude < radioDespertar) Despertar();
             return;
         }
         if (estado == Estado.Accion) return;
