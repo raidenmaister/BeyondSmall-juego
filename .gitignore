@@ -126,3 +126,6 @@ ehthumbs.db
 # IDE / Editor files
 .idea/
 .vscode/
+
+# Transcripciones e imagenes de videos de YouTube: solo en esta PC, nunca en el repositorio
+Docs/Videos/
