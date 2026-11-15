@@ -19,6 +19,7 @@ public class Estadisticas
     public int antorchasCreadas, escudosCreados;
     public int bloqueosPerfectos;
     public int mochilasRecuperadas;
+    public int atrapadoBolita, escapesBolita;     // Hamsterlandia
     public List<Conteo> bichos = new List<Conteo>();
 
     [System.Serializable] public class Conteo { public string tipo; public int n; }

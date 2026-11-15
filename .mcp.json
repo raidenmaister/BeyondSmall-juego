@@ -1,8 +1,8 @@
 {
   "mcpServers": {
     "unityMCP": {
-      "command": "C:/Users/Axel/AppData/Roaming/Python/Python310/Scripts/uvx.exe",
-      "args": ["--from", "mcpforunityserver==10.3.0", "mcp-for-unity", "--transport", "stdio"]
+      "command": "C:/Users/AXXLI/AppData/Roaming/Python/Python315/Scripts/uvx.exe",
+      "args": ["--python", "C:/Users/AXXLI/AppData/Roaming/uv/python/cpython-3.12.16-windows-x86_64-none/python.exe", "--from", "mcpforunityserver==10.3.0", "mcp-for-unity", "--transport", "stdio"]
     }
   }
 }

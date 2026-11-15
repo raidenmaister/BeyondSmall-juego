@@ -146,6 +146,7 @@ public class DatosPartida
 
     public int baterias;
     public bool hormigueroFuria, colmenaFuria, colmenaReinaMuerta;
+    public int hamsterPalancas;             // palancas encendidas de Hamsterlandia (bits)
 
     public string mapaNiebla = "";          // zonas exploradas del mapa (gzip + base64)
     public List<ChinchetaGuardada> chinchetas = new List<ChinchetaGuardada>();

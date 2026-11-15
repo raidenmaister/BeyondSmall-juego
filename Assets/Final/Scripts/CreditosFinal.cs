@@ -136,6 +136,7 @@ public class CreditosFinal : MonoBehaviour
             (Item("Escudo"), Color.white, "Escudos creados", e.escudosCreados, v => Mathf.RoundToInt(v).ToString()),
             (IconoEstrella(), Acento, "Bloqueos perfectos", e.bloqueosPerfectos, v => Mathf.RoundToInt(v).ToString()),
             (Item("Carne"), Color.white, "Bocados", e.comidas, v => Mathf.RoundToInt(v).ToString()),
+            (IconosMapa.Lugar(MapaMundo.TipoLugar.Hamsterlandia), Color.white, "Veces que Bolita te atrapo", e.atrapadoBolita, v => Mathf.RoundToInt(v).ToString()),
             (IconosMapa.Chincheta(), new Color(0.9f, 0.3f, 0.25f), "Lugares descubiertos", lugares, v => Mathf.RoundToInt(v) + " de " + totalLugares),
         };
         var col = new GameObject("Columna", typeof(RectTransform)).GetComponent<RectTransform>();
@@ -271,7 +272,7 @@ public class CreditosFinal : MonoBehaviour
         Item_("Plantas, rocas, troncos, muebles y texturas");
         Peque("Poly Haven (CC0)  ·  polyhaven.com");
         Peque("dandelion_01 · flower_gazania · flower_ursinia · shrub_sorrel_01 · fern_02 · nettle_plant\nrock_07 · rock_09 · namaqualand_boulder_05 · tree_stump_01 · dead_tree_trunk · fir_sapling\nSchoolDesk_01 · SchoolChair_01 · can_rusted · old_tyre · cardboard_box_01 · forest_ground_04\ncastle_brick_02_red · dirty_concrete · rusty_metal_02 · concrete_moss");
-        Item_("Hormiguero, arbol de la colmena, cloaca, cabina, mapa y baterias");
+        Item_("Hormiguero, arbol de la colmena, cloaca, Hamsterlandia, cabina, mapa y baterias");
         Peque("Generados por codigo para Beyond Small");
         Seccion("SONIDOS");
         Item_("Mas de 50 sonidos de la comunidad de Freesound (CC0)");
@@ -279,6 +280,7 @@ public class CreditosFinal : MonoBehaviour
         Peque("496237 · 402450 · 536753 · 470148 · 502211 · 175228 · 467700 · 700418 · 649982 · 800277\n421135 · 686320 · 420670 · 523372 · 818888 · 650379 · 726877 · 757292 · 631985 · 353199\n817927 · 386385 · 422742 · 495117 · 854269 · 844243 · 375925 · 742835 · 636578 · 451948 · 615047\n545663 · 790826 · 345733 · 160350 · 788212 · 288941 · 199452 · 274259");
         Seccion("MUSICA");
         Item_("Tema del final: compuesto para Beyond Small");
+        Item_("Vals de Hamsterlandia y galope de Bolita: sintetizados por codigo");
         Peque("Musica del menu: Music Ethereal (archivos del proyecto)");
         Seccion("TIPOGRAFIA");
         Item_("Barlow y Barlow Condensed");

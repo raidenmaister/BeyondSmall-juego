@@ -100,6 +100,7 @@ public class SpawnerNocturno : MonoBehaviour
         if (Hormiguero.Instancia != null && Hormiguero.Instancia.JugadorDentro) return true;
         if (Colmena.Instancia != null && Colmena.Instancia.JugadorDentro) return true;
         if (Cloaca.Instancia != null && Cloaca.Instancia.JugadorDentro) return true;
+        if (Hamsterlandia.Instancia != null && Hamsterlandia.Instancia.JugadorDentro) return true;
         return false;
     }
 

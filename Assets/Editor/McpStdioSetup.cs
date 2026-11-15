@@ -7,7 +7,7 @@ using UnityEditor;
 [InitializeOnLoad]
 static class McpStdioSetup
 {
-    const string Uvx = "C:/Users/Axel/AppData/Roaming/Python/Python310/Scripts/uvx.exe";
+    const string Uvx = "C:/Users/AXXLI/AppData/Roaming/Python/Python315/Scripts/uvx.exe";
 
     static McpStdioSetup()
     {

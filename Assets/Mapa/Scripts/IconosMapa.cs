@@ -169,6 +169,32 @@ public static class IconosMapa
                 c = Sobre(c, new Color(0.9f, 0.15f, 0.1f, Circulo(u, v, 0.38f, -0.26f, 0.045f)));
                 return c;
             }, new Vector2(0.5f, 0.5f));
+            case MapaMundo.TipoLugar.Hamsterlandia: return Hacer("hamsterlandia", (u, v) =>
+            {
+                // cara de Bolita: cabeza naranja, cachetes, hocico blanco, ojos negros y sombrero de copa
+                Color c = Color.clear;
+                Color naranja = new Color(0.92f, 0.6f, 0.28f), crema = new Color(0.98f, 0.93f, 0.84f), rosa = new Color(0.95f, 0.6f, 0.62f);
+                c = Sobre(c, new Color(naranja.r * 0.8f, naranja.g * 0.8f, naranja.b * 0.8f, Circulo(u, v, -0.5f, 0.28f, 0.2f)));
+                c = Sobre(c, new Color(naranja.r * 0.8f, naranja.g * 0.8f, naranja.b * 0.8f, Circulo(u, v, 0.5f, 0.28f, 0.2f)));
+                c = Sobre(c, new Color(rosa.r, rosa.g, rosa.b, Circulo(u, v, -0.5f, 0.28f, 0.1f)));
+                c = Sobre(c, new Color(rosa.r, rosa.g, rosa.b, Circulo(u, v, 0.5f, 0.28f, 0.1f)));
+                c = Sobre(c, new Color(naranja.r, naranja.g, naranja.b, Circulo(u, v, 0f, -0.12f, 0.62f)));
+                c = Sobre(c, new Color(crema.r, crema.g, crema.b, Circulo(u, v, -0.3f, -0.36f, 0.3f)));
+                c = Sobre(c, new Color(crema.r, crema.g, crema.b, Circulo(u, v, 0.3f, -0.36f, 0.3f)));
+                c = Sobre(c, new Color(Tinta.r, Tinta.g, Tinta.b, Anillo(u, v, 0f, -0.12f, 0.62f, 0.04f)));
+                c = Sobre(c, new Color(0.08f, 0.06f, 0.06f, Circulo(u, v, -0.24f, 0.0f, 0.09f)));
+                c = Sobre(c, new Color(0.08f, 0.06f, 0.06f, Circulo(u, v, 0.24f, 0.0f, 0.09f)));
+                c = Sobre(c, new Color(1f, 1f, 1f, Circulo(u, v, -0.21f, 0.04f, 0.03f)));
+                c = Sobre(c, new Color(1f, 1f, 1f, Circulo(u, v, 0.27f, 0.04f, 0.03f)));
+                c = Sobre(c, new Color(rosa.r, rosa.g, rosa.b, Circulo(u, v, 0f, -0.2f, 0.07f)));
+                // sombrero de copa
+                float ala = (Mathf.Abs(u) < 0.36f && v > 0.44f && v < 0.52f) ? 1f : 0f;
+                float copa = (Mathf.Abs(u) < 0.22f && v > 0.5f && v < 0.88f) ? 1f : 0f;
+                float cinta = (Mathf.Abs(u) < 0.22f && v > 0.52f && v < 0.6f) ? 1f : 0f;
+                c = Sobre(c, new Color(0.12f, 0.1f, 0.12f, Mathf.Max(ala, copa)));
+                c = Sobre(c, new Color(0.85f, 0.15f, 0.2f, cinta));
+                return c;
+            }, new Vector2(0.5f, 0.5f));
             default: return Hacer("marca", (u, v) => new Color(Tinta.r, Tinta.g, Tinta.b, Anillo(u, v, 0, 0, 0.55f, 0.1f)), new Vector2(0.5f, 0.5f));
         }
     }

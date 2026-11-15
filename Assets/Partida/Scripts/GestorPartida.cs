@@ -23,6 +23,8 @@ public class GestorPartida : MonoBehaviour
 {
     public static GestorPartida Instancia { get; private set; }
     public static bool Muerto { get; private set; }
+    /// <summary>Frase extra para la pantalla de muerte (la pone quien te mato, p. ej. Bolita). Se borra al usarla.</summary>
+    public static string CausaMuerte;
 
     readonly Dictionary<string, GameObject> items = new Dictionary<string, GameObject>();
     readonly HashSet<GameObject> itemsEscena = new HashSet<GameObject>();
@@ -303,6 +305,7 @@ public class GestorPartida : MonoBehaviour
         }
 
         if (MaquinaCrecimiento.Instancia != null) d.baterias = MaquinaCrecimiento.Instancia.Colocadas;
+        if (Hamsterlandia.Instancia != null) d.hamsterPalancas = Hamsterlandia.Instancia.PalancasGuardadas;
         if (Hormiguero.Instancia != null) d.hormigueroFuria = Hormiguero.Instancia.Furia;
         if (Colmena.Instancia != null) { d.colmenaFuria = Colmena.Instancia.Furia; d.colmenaReinaMuerta = Colmena.Instancia.ReinaMuerta; }
         if (MapaMundo.Instancia != null) MapaMundo.Instancia.Exportar(d);
@@ -343,6 +346,7 @@ public class GestorPartida : MonoBehaviour
         if (Hormiguero.Instancia != null && Hormiguero.Instancia.JugadorDentro) return "Hormiguero";
         if (Colmena.Instancia != null && Colmena.Instancia.JugadorDentro) return "Colmena";
         if (Cloaca.Instancia != null && Cloaca.Instancia.JugadorDentro) return "Cloaca";
+        if (Hamsterlandia.Instancia != null && Hamsterlandia.Instancia.JugadorDentro) return "Hamsterlandia";
         if (MaquinaCrecimiento.Instancia != null)
         {
             Vector3 c = p - MaquinaCrecimiento.Instancia.transform.position; c.y = 0f;
@@ -444,6 +448,7 @@ public class GestorPartida : MonoBehaviour
         }
 
         if (MaquinaCrecimiento.Instancia != null) MaquinaCrecimiento.Instancia.Restaurar(d.baterias);
+        if (Hamsterlandia.Instancia != null) Hamsterlandia.Instancia.Restaurar(d.hamsterPalancas);
         if (Hormiguero.Instancia != null && d.hormigueroFuria) Hormiguero.Instancia.RestaurarFuria();
         if (Colmena.Instancia != null && (d.colmenaFuria || d.colmenaReinaMuerta)) Colmena.Instancia.Restaurar(d.colmenaFuria, d.colmenaReinaMuerta);
         if (MapaMundo.Instancia != null) MapaMundo.Instancia.Importar(d);
@@ -536,7 +541,9 @@ public class GestorPartida : MonoBehaviour
         Reaparecer();
         for (float t = 0f; t < 1f; t += Time.unscaledDeltaTime / 0.8f) { titulo.color = new Color(0.85f, 0.2f, 0.18f, 1f - t); yield return null; }
         titulo.color = Color.clear;
-        texto.text = "<size=120%>Despiertas en la cabina...</size>\n<color=#cfc6b4>" + msg + "</color>";
+        string causa = string.IsNullOrEmpty(CausaMuerte) ? "" : "<color=#ffd27a>" + CausaMuerte + "</color>\n";
+        CausaMuerte = null;
+        texto.text = "<size=120%>Despiertas en la cabina...</size>\n" + causa + "<color=#cfc6b4>" + msg + "</color>";
         for (float t = 0f; t < 1f; t += Time.unscaledDeltaTime / 0.8f) { texto.color = new Color(1, 1, 1, t); yield return null; }
         for (float t = 0f; t < 4.5f; t += Time.unscaledDeltaTime)
         {
