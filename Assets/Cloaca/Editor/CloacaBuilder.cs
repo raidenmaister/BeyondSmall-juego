@@ -508,7 +508,7 @@ public static class CloacaBuilder
             m.SetTexture("_BaseMap", tex);
             if (tiling != default) m.SetTextureScale("_BaseMap", tiling);
             if (nor != null) { m.SetTexture("_BumpMap", nor); m.EnableKeyword("_NORMALMAP"); } else { m.SetTexture("_BumpMap", null); m.DisableKeyword("_NORMALMAP"); }
-            if (emision.maxColorComponent > 0f) { m.EnableKeyword("_EMISSION"); m.SetColor("_EmissionColor", emision); m.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None; }
+            if (emision.maxColorComponent > 0f) { m.EnableKeyword("_EMISSION"); m.SetColor("_EmissionColor", emision); m.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive; }   // con None, URP le quita _EMISSION al validar
             else m.DisableKeyword("_EMISSION");
         });
     }

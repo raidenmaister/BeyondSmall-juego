@@ -32,6 +32,8 @@ public class CreatureAI : MonoBehaviour
     [Range(0.2f, 1.5f)] public float speedMultiplier = 0.55f;
 
     [Header("Deteccion")]
+    [Tooltip("Tranquilo: no persigue al jugador; solo se defiende si lo golpean (y se calma al volver a casa)")]
+    public bool pasivo;
     public float detectionDistance = 10f;
     public float loseDistance = 18f;
 
@@ -76,6 +78,11 @@ public class CreatureAI : MonoBehaviour
     float orbitAngle, orbitDir = 1f;
     float seed;
     bool dying;
+    bool provocado;
+    static bool avisoPasivo;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void Reiniciar() { avisoPasivo = false; }
 
     // gusano
     GameObject mound;
@@ -221,7 +228,13 @@ public class CreatureAI : MonoBehaviour
         attackCd -= dt;
         Vector3 toPlayer = Flat(player.position - transform.position);
         // pacifico: el jugador "no existe" para los bichos (no lo persiguen ni lo atacan)
-        float dist = Partida.Agresivos ? toPlayer.magnitude : 9999f;
+        // tranquilo: igual, hasta que lo golpean
+        float dist = Partida.Agresivos && (!pasivo || provocado) ? toPlayer.magnitude : 9999f;
+        if (pasivo && !avisoPasivo && !provocado && toPlayer.sqrMagnitude < 7f * 7f && Partida.Agresivos)
+        {
+            avisoPasivo = true;
+            SurvivalUI.Aviso("Este bicho es tranquilo: solo se defiende si lo golpeas", new Color(0.75f, 0.95f, 0.7f));
+        }
 
         switch (kind)
         {
@@ -257,7 +270,7 @@ public class CreatureAI : MonoBehaviour
         {
             if (dist <= detectionDistance) { OnDetect(); SetState(chaseState); return false; }
             Vector3 d = Flat(home - transform.position);
-            if (d.magnitude <= 0.4f) { SetState(S.Idle); SetMove(0f); return true; }
+            if (d.magnitude <= 0.4f) { SetState(S.Idle); SetMove(0f); provocado = false; return true; }
             Face(d, dt); Step(d, returnSpeed, dt); SetMove(0.6f);
             return true;
         }
@@ -713,6 +726,7 @@ public class CreatureAI : MonoBehaviour
         knockbackDirection.Normalize();
 
         if (kind == Kind.Ants) AlertNearbyAnts();
+        provocado = true;
         if (state == S.Idle || state == S.Return) { if (kind != Kind.Worm && kind != Kind.Butterfly) SetState(S.Chase); }
 
         switch (kind)
