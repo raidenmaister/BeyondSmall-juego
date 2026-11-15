@@ -13,6 +13,7 @@ public class StatusEffects : MonoBehaviour
     float poisonDps, poisonUntil, poisonTick;
     PlayerHealth health;
 
+    public static bool Envenenado => instance != null && Time.time < instance.poisonUntil;
     public static float SpeedMultiplier => instance != null && Time.time < instance.slowUntil ? instance.slowMult : 1f;
 
     public static StatusEffects Get()

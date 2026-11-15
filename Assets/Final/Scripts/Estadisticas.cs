@@ -21,6 +21,14 @@ public class Estadisticas
     public int mochilasRecuperadas;
     public int atrapadoBolita, escapesBolita;     // Hamsterlandia
     public List<Conteo> bichos = new List<Conteo>();
+    // logros y misiones (Logros.cs)
+    public List<string> logros = new List<string>();
+    public List<string> misiones = new List<string>();
+    public List<Conteo> contadores = new List<Conteo>();
+    public List<string> fusionados = new List<string>();   // objetos distintos creados en el inventario
+    public List<string> materiales = new List<string>();   // materiales distintos que han pasado por la mochila
+    public bool completadaFinal;
+    public string armaEquipada = "";                       // para volver a empuñarla al cargar
 
     [System.Serializable] public class Conteo { public string tipo; public int n; }
 
@@ -89,6 +97,7 @@ public class Estadisticas
     public static void Creado(string item)
     {
         Actual.creados++;
+        if (!Actual.fusionados.Contains(item)) Actual.fusionados.Add(item);
         if (item == "Antorcha") Actual.antorchasCreadas++;
         if (item == "Escudo") Actual.escudosCreados++;
     }

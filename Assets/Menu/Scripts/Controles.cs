@@ -11,7 +11,8 @@ public static class Controles
     public enum Accion
     {
         Adelante, Atras, Izquierda, Derecha, Correr, Agacharse, Saltar,
-        Atacar, Bloquear, Interactuar, Inventario, Comer, Cocinar, Antorcha, AcelerarTiempo, Guardar, Mapa
+        Atacar, Bloquear, Interactuar, Inventario, Comer, Cocinar, Antorcha, AcelerarTiempo, Guardar, Mapa,
+        CambiarArma, Curar, Misiones
     }
 
     public static readonly Dictionary<Accion, KeyCode> Predeterminadas = new Dictionary<Accion, KeyCode>
@@ -20,6 +21,7 @@ public static class Controles
         { Accion.Correr, KeyCode.LeftShift }, { Accion.Agacharse, KeyCode.LeftControl }, { Accion.Saltar, KeyCode.Space },
         { Accion.Atacar, KeyCode.Mouse0 }, { Accion.Bloquear, KeyCode.Mouse1 }, { Accion.Interactuar, KeyCode.E },
         { Accion.Inventario, KeyCode.I }, { Accion.Comer, KeyCode.F }, { Accion.Cocinar, KeyCode.C }, { Accion.Antorcha, KeyCode.T }, { Accion.AcelerarTiempo, KeyCode.N }, { Accion.Guardar, KeyCode.F5 }, { Accion.Mapa, KeyCode.M },
+        { Accion.CambiarArma, KeyCode.Q }, { Accion.Curar, KeyCode.H }, { Accion.Misiones, KeyCode.J },
     };
 
     public static readonly Dictionary<Accion, string> Nombres = new Dictionary<Accion, string>
@@ -28,6 +30,7 @@ public static class Controles
         { Accion.Correr, "Correr" }, { Accion.Agacharse, "Agacharse" }, { Accion.Saltar, "Saltar" },
         { Accion.Atacar, "Golpear" }, { Accion.Bloquear, "Bloquear" }, { Accion.Interactuar, "Recoger / interactuar" },
         { Accion.Inventario, "Inventario" }, { Accion.Comer, "Comer" }, { Accion.Cocinar, "Cocinar" }, { Accion.Antorcha, "Antorcha" }, { Accion.AcelerarTiempo, "Acelerar el tiempo" }, { Accion.Guardar, "Guardar partida" }, { Accion.Mapa, "Mapa" },
+        { Accion.CambiarArma, "Cambiar de arma" }, { Accion.Curar, "Usar venda" }, { Accion.Misiones, "Misiones y logros" },
     };
 
     /// <summary>Menu abierto, pausa o intro: el juego ignora las teclas de accion.</summary>

@@ -26,6 +26,8 @@ public class BrujulaUI : MonoBehaviour
     // mochilas, botines y bichos ladrones (cambian durante el juego)
     readonly Dictionary<Component, Objetivo> bolsas = new Dictionary<Component, Objetivo>();
     static readonly Color ColorLadron = new Color(1f, 0.55f, 0.45f);
+    // señales de las baterias (Objetivos): el jugador siempre sabe hacia donde ir
+    readonly Dictionary<Objetivos.Senal, Objetivo> senales = new Dictionary<Objetivos.Senal, Objetivo>();
 
     void Start()
     {
@@ -149,6 +151,27 @@ public class BrujulaUI : MonoBehaviour
         foreach (var p in pines) Ubicar(p, rumbo, pxGrado);
         SincronizarBolsas();
         foreach (var o in bolsas.Values) Ubicar(o, rumbo, pxGrado);
+        SincronizarSenales();
+        foreach (var kv in senales)
+        {
+            Ubicar(kv.Value, rumbo, pxGrado);
+            // late suave para llamar la atencion; "?" mientras no se conoce el lugar
+            float pulso = 1f + 0.12f * Mathf.Sin(Time.unscaledTime * 4f);
+            kv.Value.icono.localScale = Vector3.one * pulso;
+            if (!Objetivos.LugarDescubierto(kv.Key.lugar) && kv.Value.dist.text.Length > 0) kv.Value.dist.text = "? " + kv.Value.dist.text;
+        }
+    }
+
+    void SincronizarSenales()
+    {
+        var obj = Objetivos.Instancia;
+        var vivas = new HashSet<Objetivos.Senal>();
+        if (obj != null && Ajustes.Pistas) foreach (var s in obj.Pendientes()) vivas.Add(s);
+        var fuera = new List<Objetivos.Senal>();
+        foreach (var kv in senales) if (!vivas.Contains(kv.Key)) fuera.Add(kv.Key);
+        foreach (var k in fuera) { if (senales[k].icono != null) Destroy(senales[k].icono.gameObject); senales.Remove(k); }
+        foreach (var s in vivas)
+            if (!senales.ContainsKey(s)) { var ss = s; senales[s] = CrearObjetivo(IconosMapa.Bateria(), Color.white, 30f, () => ss.pos()); }
     }
 
     void Ubicar(Objetivo o, float rumbo, float pxGrado)

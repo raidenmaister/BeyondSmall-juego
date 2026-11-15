@@ -25,6 +25,10 @@ public static class Ajustes
     public static bool Subtitulos = true;
     /// <summary>Minutos entre autoguardados (0 = desactivado).</summary>
     public static int AutoguardadoMin = 10;
+    /// <summary>Intensidad del "juice": temblor de camara, congelado de golpes y destellos (0 = nada).</summary>
+    public static float Temblor = 1f;
+    /// <summary>Muestra flechas y pistas del objetivo actual en la brujula y el HUD.</summary>
+    public static bool Pistas = true;
 
     /// <summary>Lo activa el menu al pulsar Jugar: la escena del juego empieza con la intro de "despertar".</summary>
     public static bool IntroPendiente = true;
@@ -89,6 +93,8 @@ public static class Ajustes
         MostrarFps = PlayerPrefs.GetInt("aj_verFps", 0) == 1;
         Subtitulos = PlayerPrefs.GetInt("aj_subs", 1) == 1;
         AutoguardadoMin = PlayerPrefs.GetInt("aj_autoguardado", 10);
+        Temblor = PlayerPrefs.GetFloat("aj_temblor", 1f);
+        Pistas = PlayerPrefs.GetInt("aj_pistas", 1) == 1;
     }
 
     public static void Guardar()
@@ -108,6 +114,8 @@ public static class Ajustes
         PlayerPrefs.SetInt("aj_verFps", MostrarFps ? 1 : 0);
         PlayerPrefs.SetInt("aj_subs", Subtitulos ? 1 : 0);
         PlayerPrefs.SetInt("aj_autoguardado", AutoguardadoMin);
+        PlayerPrefs.SetFloat("aj_temblor", Temblor);
+        PlayerPrefs.SetInt("aj_pistas", Pistas ? 1 : 0);
         PlayerPrefs.Save();
     }
 
@@ -116,6 +124,7 @@ public static class Ajustes
         VolGeneral = 0.9f; VolMusica = 0.7f; VolEfectos = 0.9f; VolAmbiente = 0.8f;
         Sensibilidad = 1f; InvertirY = false; Brillo = 0f;
         VSync = true; LimiteFps = 0; MostrarFps = false; Subtitulos = true; AutoguardadoMin = 10;
+        Temblor = 1f; Pistas = true;
         Aplicar(); Guardar();
     }
 

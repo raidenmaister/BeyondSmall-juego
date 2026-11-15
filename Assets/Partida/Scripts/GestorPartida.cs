@@ -305,6 +305,7 @@ public class GestorPartida : MonoBehaviour
         }
 
         if (MaquinaCrecimiento.Instancia != null) d.baterias = MaquinaCrecimiento.Instancia.Colocadas;
+        d.senalesRastreadas = Objetivos.Escaneado;
         if (Hamsterlandia.Instancia != null) d.hamsterPalancas = Hamsterlandia.Instancia.PalancasGuardadas;
         if (Hormiguero.Instancia != null) d.hormigueroFuria = Hormiguero.Instancia.Furia;
         if (Colmena.Instancia != null) { d.colmenaFuria = Colmena.Instancia.Furia; d.colmenaReinaMuerta = Colmena.Instancia.ReinaMuerta; }
@@ -448,6 +449,8 @@ public class GestorPartida : MonoBehaviour
         }
 
         if (MaquinaCrecimiento.Instancia != null) MaquinaCrecimiento.Instancia.Restaurar(d.baterias);
+        // partidas viejas (sin el campo): si ya habia baterias puestas, las señales ya se conocian
+        Objetivos.Escaneado = d.senalesRastreadas || d.baterias > 0;
         if (Hamsterlandia.Instancia != null) Hamsterlandia.Instancia.Restaurar(d.hamsterPalancas);
         if (Hormiguero.Instancia != null && d.hormigueroFuria) Hormiguero.Instancia.RestaurarFuria();
         if (Colmena.Instancia != null && (d.colmenaFuria || d.colmenaReinaMuerta)) Colmena.Instancia.Restaurar(d.colmenaFuria, d.colmenaReinaMuerta);
@@ -538,12 +541,13 @@ public class GestorPartida : MonoBehaviour
         string msg = "";
         try { msg = InventarioMuerte.AlMorir(donde); }
         catch (System.Exception e) { Debug.LogError("[Partida] inventario al morir: " + e); }
-        Reaparecer();
+        string refugio = Reaparecer(donde);
         for (float t = 0f; t < 1f; t += Time.unscaledDeltaTime / 0.8f) { titulo.color = new Color(0.85f, 0.2f, 0.18f, 1f - t); yield return null; }
         titulo.color = Color.clear;
         string causa = string.IsNullOrEmpty(CausaMuerte) ? "" : "<color=#ffd27a>" + CausaMuerte + "</color>\n";
         CausaMuerte = null;
-        texto.text = "<size=120%>Despiertas en la cabina...</size>\n" + causa + "<color=#cfc6b4>" + msg + "</color>";
+        string donde2 = refugio != null ? "Despiertas cerca de " + refugio.ToLower() + "..." : "Despiertas en la cabina...";
+        texto.text = "<size=120%>" + donde2 + "</size>\n" + causa + "<color=#cfc6b4>" + msg + "</color>";
         for (float t = 0f; t < 1f; t += Time.unscaledDeltaTime / 0.8f) { texto.color = new Color(1, 1, 1, t); yield return null; }
         for (float t = 0f; t < 4.5f; t += Time.unscaledDeltaTime)
         {
@@ -576,12 +580,16 @@ public class GestorPartida : MonoBehaviour
     }
 
     /// <summary>De vuelta a la cabina, con la vida llena y sin veneno.</summary>
-    void Reaparecer()
+    /// <summary>Devuelve el nombre del refugio donde despierta (null = la cabina).</summary>
+    string Reaparecer(Vector3 muerte)
     {
-        if (pc == null) return;
+        if (pc == null) return null;
         Vector3 pos = inicioJugador; Quaternion rot = rotInicio;
         var maq = MaquinaCrecimiento.Instancia;
         if (maq != null) { pos = maq.transform.TransformPoint(new Vector3(0f, 1.05f, -4f)); rot = maq.transform.rotation; }
+        // checkpoint: la entrada de la zona donde caiste, si ya la conocias (Alva Majo: no repetir todo)
+        Vector3 rp; Quaternion rr; string refugio;
+        if (Refugios.Elegir(muerte, out rp, out rr, out refugio)) { pos = rp; rot = rr; }
         var cc = pc.GetComponent<CharacterController>();
         if (cc != null) cc.enabled = false;
         pc.transform.SetPositionAndRotation(pos, rot);
@@ -590,6 +598,7 @@ public class GestorPartida : MonoBehaviour
         if (vida != null) vida.SetHealth(vida.MaxHealth, vida.MaxHealth);
         if (PlayerHunger.Instance != null && PlayerHunger.Instance.CurrentFood < 40f) PlayerHunger.Instance.SetFood(40f);
         StatusEffects.Limpiar();
+        return refugio;
     }
 
     void CrearPost(out Volume vol, out ColorAdjustments color, out DepthOfField dof)

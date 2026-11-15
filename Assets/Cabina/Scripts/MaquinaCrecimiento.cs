@@ -123,8 +123,14 @@ public class MaquinaCrecimiento : MonoBehaviour
                     SurvivalUI.Indicacion(this, $"[{tecla}] Colocar bateria verde   ({colocadas}/{Necesarias})");
                     if (Controles.Bajada(Controles.Accion.Interactuar) && inv.RemoveItem(ItemBateria, 1)) Colocar();
                 }
+                else if (!Objetivos.Escaneado)
+                {
+                    // la cabina sabe donde estan las baterias: el jugador no tiene que adivinarlo
+                    SurvivalUI.Indicacion(this, $"[{tecla}] Rastrear señales de energia   ({colocadas}/{Necesarias})");
+                    if (Controles.Bajada(Controles.Accion.Interactuar)) Objetivos.Escanear();
+                }
                 else
-                    SurvivalUI.Indicacion(this, $"Bahia de energia: {colocadas}/{Necesarias} baterias verdes");
+                    SurvivalUI.Indicacion(this, $"Bahia de energia: {colocadas}/{Necesarias} baterias verdes  -  sigue las señales de la brujula");
                 return;
             }
         }

@@ -60,7 +60,7 @@ public class ControladorInventario : MonoBehaviour
         if (!pistaReceta && (GetTotalCount("Carbon") > 0 || GetTotalCount("Palo") > 0))
         {
             pistaReceta = true;
-            Aviso.Mostrar("Carbon + palo = antorcha\n<size=60%>Abre el inventario y ponlos en CREAR ARMA</size>", new Color(1f, 0.75f, 0.35f), 5f);
+            Aviso.Mostrar("Carbon + palo = antorcha\n<size=60%>Abre el inventario (I) y mira el libro de RECETAS</size>", new Color(1f, 0.75f, 0.35f), 5f);
         }
     }
 

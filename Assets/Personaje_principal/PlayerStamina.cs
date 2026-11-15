@@ -37,6 +37,7 @@ public class PlayerStamina : MonoBehaviour
     private void Start()
     {
         FindUIReferencesIfNeeded();
+        if (fillImage != null && !colorLeido) { colorBase = fillImage.color; colorLeido = true; }
         UpdateUI(immediate: true);
     }
 
@@ -58,6 +59,41 @@ public class PlayerStamina : MonoBehaviour
             fillImage.fillAmount = displayedFill;
         }
     }
+
+    float agitar;
+    RectTransform barra; Vector2 barraPos;
+    float ultimoAviso = -9f;
+
+    /// <summary>
+    /// Alva Majo: si pulsas atacar y no pasa nada, el juego tiene que decirte por que.
+    /// La barra de stamina se agita y se pone roja, y suena un resoplido.
+    /// </summary>
+    public void AvisarSinStamina()
+    {
+        if (Time.time - ultimoAviso < 0.25f) return;
+        ultimoAviso = Time.time;
+        agitar = 0.45f;
+        SonidosJuice.Tocar(SonidosJuice.SinAliento, transform.position + Vector3.up, 0.7f);
+    }
+
+    void LateUpdate()
+    {
+        if (agitar <= 0f) return;
+        if (barra == null && fillImage != null)
+        {
+            var t = fillImage.transform;
+            while (t.parent != null && !t.name.EndsWith("_Container")) t = t.parent;
+            barra = t as RectTransform;
+            if (barra != null) barraPos = barra.anchoredPosition;
+        }
+        agitar -= Time.unscaledDeltaTime;
+        if (barra != null)
+            barra.anchoredPosition = barraPos + (agitar > 0f ? new Vector2(Mathf.Sin(Time.unscaledTime * 70f) * 9f * agitar / 0.45f, 0f) : Vector2.zero);
+        if (fillImage != null)
+            fillImage.color = Color.Lerp(colorBase, new Color(1f, 0.25f, 0.2f), agitar > 0f ? Mathf.PingPong(Time.unscaledTime * 8f, 1f) : 0f);
+    }
+
+    Color colorBase = Color.white; bool colorLeido;
 
     public bool HasEnoughStamina(float amount)
     {

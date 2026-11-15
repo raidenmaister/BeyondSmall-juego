@@ -25,11 +25,12 @@ public class RatHealth : MonoBehaviour
         currentHealth = Mathf.Clamp(currentHealth, 0f, maxHealth);
     }
 
-    public void TakeDamage(float amount)
+    /// <summary>Devuelve el daño que entro de verdad (0 si la armadura o el estado lo anulo).</summary>
+    public float TakeDamage(float amount)
     {
-        if (IsDead || amount <= 0f) return;
+        if (IsDead || amount <= 0f) return 0f;
         if (DamageFilter != null) amount = DamageFilter(amount);
-        if (amount <= 0f) return;
+        if (amount <= 0f) return 0f;
 
         currentHealth = Mathf.Max(0f, currentHealth - amount);
         OnHealthChanged?.Invoke(currentHealth, maxHealth);
@@ -39,6 +40,7 @@ public class RatHealth : MonoBehaviour
             OnDeath?.Invoke();
             AlguienMurio?.Invoke(this);
         }
+        return amount;
     }
 
     public void Heal(float amount)

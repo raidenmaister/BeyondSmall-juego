@@ -23,7 +23,28 @@ public class PlayerController : MonoBehaviour
     public float jumpHeight = 1.5f;
     public float gravity = -25f;
     public float fallMultiplier = 2.5f;
+    [Tooltip("Coyote time (Alva Majo): segundos en los que aun se puede saltar despues de salirse del borde.")]
+    public float coyoteTime = 0.15f;
+    [Tooltip("Input buffer: si pulsas saltar un poco antes de tocar el suelo, el salto se guarda y sale al aterrizar.")]
+    public float jumpBuffer = 0.18f;
+    [Tooltip("Al soltar saltar mientras subes, la velocidad se multiplica por esto: saltos cortos y largos.")]
+    [Range(0.2f, 1f)] public float corteSaltoCorto = 0.45f;
+    [Tooltip("Cerca del punto mas alto la gravedad baja un poco: el salto flota un instante y es mas facil de controlar.")]
+    [Range(0.3f, 1f)] public float gravedadCumbre = 0.6f;
     private Vector3 velocity;
+    private float ultimoSuelo = -99f;       // ultimo instante tocando suelo (coyote time)
+    private float saltoPedido = -99f;       // ultimo instante en que se pulso saltar (input buffer)
+    private bool saltando;                  // subiendo por un salto (salto variable; no gastar el coyote dos veces)
+    private bool estabaEnSuelo = true;
+    private float velocidadCaida;           // para saber lo fuerte que aterriza
+    private float ataquePedido = -99f;      // input buffer del ataque (pulsado justo antes de poder pegar)
+    [Tooltip("Velocidad de caida con el planeador (mejora Alas + Hueso).")]
+    public float velocidadPlaneo = 2.2f;
+    public bool Planeando { get; private set; }
+    /// <summary>Aterriza (velocidad de caida). Lo usan el squash and stretch y el polvo.</summary>
+    public System.Action<float> AlAterrizar;
+    /// <summary>Despega con un salto.</summary>
+    public System.Action AlSaltar;
     private Vector3 lastSafePosition;
     private bool isGrounded;
 
@@ -32,6 +53,8 @@ public class PlayerController : MonoBehaviour
     public float comboResetTime = 0.8f; // Tiempo sin cliquear para reiniciar combo a Golpe 1
     public float attackRange = 1.8f; // Rango cuerpo a cuerpo realista (1.8m de alcance)
     public float attackDamage = 20f; // Daño al golpear (5 golpes para derrotar a la rata de 100 PV)
+    [Tooltip("El golpe cargado pega mas fuerte: mantener el clic tiene recompensa.")]
+    public float heavyDamageMultiplier = 2f;
     public float staminaCostPerHit = 30f; // Coste de stamina por golpe
     public PlayerStamina playerStamina;
 
@@ -50,6 +73,7 @@ public class PlayerController : MonoBehaviour
     public bool IsAttacking => isAttacking;
     public bool IsGrounded => isGrounded;
     public bool InventarioAbierto => isInventoryOpen;
+    public Vector3 VelocidadVertical => velocity;
     // Para el sonido de los golpes: true si el puñetazo conecto con un enemigo
     public System.Action<bool> OnPunch;
 
@@ -91,10 +115,15 @@ public class PlayerController : MonoBehaviour
         isGrounded = controller.isGrounded;
         if (animator != null) animator.SetBool("IsGrounded", isGrounded);
 
-        if (isGrounded && velocity.y < 0)
+        if (isGrounded)
         {
-            velocity.y = -2f;
+            if (!estabaEnSuelo && velocidadCaida > 1f) AlAterrizar?.Invoke(velocidadCaida);
+            ultimoSuelo = Time.time;
+            velocidadCaida = 0f;
+            if (velocity.y < 0) { velocity.y = -2f; saltando = false; }
         }
+        else velocidadCaida = Mathf.Max(velocidadCaida, -velocity.y);
+        estabaEnSuelo = isGrounded;
 
         // Reiniciar el combo tras inactividad
         if (comboStep != 0 && !isAttacking && (Time.time - lastAttackFinishTime > comboResetTime))
@@ -113,8 +142,9 @@ public class PlayerController : MonoBehaviour
             controller.height = crouchHeight;
             controller.center = new Vector3(originalCenter.x, crouchHeight / 2f, originalCenter.z);
         }
-        else
+        else if (!isCrouching || HayHuecoParaLevantarse())
         {
+            // no se levanta si hay algo justo encima (antes atravesaba el techo)
             isCrouching = false;
             controller.height = originalHeight;
             controller.center = originalCenter;
@@ -142,6 +172,7 @@ public class PlayerController : MonoBehaviour
             float currentSpeed = walkSpeed;
             if (isCrouching) currentSpeed = crouchSpeed;
             else if (isRunning) currentSpeed = runSpeed;
+            if (Planeando) currentSpeed = Mathf.Max(currentSpeed, runSpeed * 1.15f);   // al planear se avanza
             currentSpeed *= StatusEffects.SpeedMultiplier;
 
             float targetAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg + cameraTransform.eulerAngles.y;
@@ -159,29 +190,51 @@ public class PlayerController : MonoBehaviour
             if (animator != null) animator.SetFloat("Speed", 0f);
         }
 
-        // Salto
-        if (Controles.Bajada(Controles.Accion.Saltar) && isGrounded && !isCrouching && !isAttacking)
+        // Salto (Alva Majo: coyote time + input buffer + altura variable)
+        if (Controles.Bajada(Controles.Accion.Saltar)) saltoPedido = Time.time;
+        bool sueloReciente = isGrounded || (!saltando && Time.time - ultimoSuelo <= coyoteTime);
+        if (Time.time - saltoPedido <= jumpBuffer && sueloReciente && !isCrouching && !isAttacking)
         {
-            velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
+            velocity.y = Mathf.Sqrt(jumpHeight * Mejoras.MultSalto * -2f * gravity);
+            saltoPedido = -99f;
+            saltando = true;
+            ultimoSuelo = -99f;
             if (animator != null) animator.SetTrigger("Jump");
+            AlSaltar?.Invoke();
         }
+        // soltar el boton mientras sube = salto corto
+        if (saltando && velocity.y > 0f && Controles.Soltada(Controles.Accion.Saltar))
+            velocity.y *= corteSaltoCorto;
 
-        // Gravedad
-        if (velocity.y < 0)
+        // Planeador (mejora): mantener saltar mientras cae = caida lenta
+        Planeando = Mejoras.TienePlaneador && !isGrounded && velocity.y < 0f && Controles.Pulsada(Controles.Accion.Saltar)
+                    && Time.time - ultimoSuelo > 0.12f;
+
+        // Gravedad (mas fuerte al caer; mas suave justo en la cumbre del salto)
+        if (Planeando)
+        {
+            velocity.y = Mathf.MoveTowards(velocity.y, -velocidadPlaneo, -gravity * 2f * Time.deltaTime);
+        }
+        else if (velocity.y < 0)
         {
             velocity.y += gravity * fallMultiplier * Time.deltaTime;
         }
         else
         {
-            velocity.y += gravity * Time.deltaTime;
+            float k = (saltando && velocity.y < 2.2f && Controles.Pulsada(Controles.Accion.Saltar)) ? gravedadCumbre : 1f;
+            velocity.y += gravity * k * Time.deltaTime;
         }
 
-        controller.Move(velocity * Time.deltaTime);
+        var flags = controller.Move(velocity * Time.deltaTime);
+        if ((flags & CollisionFlags.Above) != 0 && velocity.y > 0f && !CorregirEsquina())
+            velocity.y = 0f;        // cabezazo de verdad: empieza a caer
 
         // Red de seguridad: si algo lo saca del mapa, volver al último punto seguro
         if (isGrounded) lastSafePosition = transform.position;
-        else if (transform.position.y < lastSafePosition.y - 30f)
+        else if (transform.position.y < lastSafePosition.y - 30f
+                 && !Physics.Raycast(transform.position, Vector3.down, 400f, ~0, QueryTriggerInteraction.Ignore))
         {
+            // solo si de verdad no hay suelo debajo (planear o caer de un mueble alto es legal)
             controller.enabled = false;
             transform.position = lastSafePosition + Vector3.up * 0.5f;
             controller.enabled = true;
@@ -261,7 +314,7 @@ public class PlayerController : MonoBehaviour
             if (hasQueuedNextCombo)
             {
                 hasQueuedNextCombo = false;
-                if (playerStamina == null || playerStamina.TryConsumeStamina(staminaCostPerHit))
+                if (playerStamina == null || playerStamina.TryConsumeStamina(CosteGolpe))
                 {
                     ExecuteNextComboStep();
                 }
@@ -271,26 +324,39 @@ public class PlayerController : MonoBehaviour
 
     void HandleCombatInput()
     {
-        if (!isGrounded || isCrouching) return;
-        if (Escudo.Bloqueando) return;       // con el escudo arriba no se golpea
-
-        if (Controles.Bajada(Controles.Accion.Atacar))
+        if (!isGrounded || isCrouching || Escudo.Bloqueando)
         {
+            // en el aire o con el escudo arriba no se golpea, pero el clic se guarda un momento
+            if (Controles.Bajada(Controles.Accion.Atacar)) ataquePedido = Time.time;
+            return;
+        }
+
+        // input buffer: un clic justo antes de poder pegar (al aterrizar, al bajar el escudo) no se pierde
+        bool clic = Controles.Bajada(Controles.Accion.Atacar);
+        if (!clic && !isAttacking && Time.time - ataquePedido <= 0.2f) clic = true;
+        if (clic)
+        {
+            ataquePedido = -99f;
             clickDownTime = Time.time;
             hasChargedAttackFired = false;
 
             if (isAttacking)
             {
-                if (playerStamina == null || playerStamina.HasEnoughStamina(staminaCostPerHit))
+                if (playerStamina == null || playerStamina.HasEnoughStamina(CosteGolpe))
                 {
                     hasQueuedNextCombo = true;
                 }
             }
             else
             {
-                if (playerStamina == null || playerStamina.TryConsumeStamina(staminaCostPerHit))
+                if (playerStamina == null || playerStamina.TryConsumeStamina(CosteGolpe))
                 {
                     ExecuteNextComboStep();
+                }
+                else
+                {
+                    // Alva Majo: si pulsar no hace nada, que se note POR QUE (la barra se agita y suena)
+                    playerStamina.AvisarSinStamina();
                 }
             }
         }
@@ -300,22 +366,24 @@ public class PlayerController : MonoBehaviour
         {
             if (Time.time - clickDownTime >= chargeThreshold)
             {
-                if (playerStamina != null && !playerStamina.HasEnoughStamina(staminaCostPerHit))
+                if (playerStamina != null && !playerStamina.HasEnoughStamina(CosteGolpe))
                 {
                     // No hay suficiente stamina para golpear
+                    hasChargedAttackFired = true;
+                    playerStamina.AvisarSinStamina();
                     return;
                 }
 
                 if (playerStamina != null)
                 {
-                    playerStamina.ConsumeStamina(staminaCostPerHit);
+                    playerStamina.ConsumeStamina(CosteGolpe);
                 }
 
                 ClearAnimatorTriggers();
                 animator.SetTrigger("HeavyAttack");
                 hasChargedAttackFired = true;
                 isAttacking = true;
-                PerformAttackHit();
+                PerformAttackHit(true);
                 ResetCombo();
             }
         }
@@ -349,35 +417,46 @@ public class PlayerController : MonoBehaviour
         PerformAttackHit();
     }
 
-    void PerformAttackHit()
+    // arma en la mano (Armas.cs) o puños
+    float CosteGolpe => Armas.Equipada != null ? Armas.Equipada.stamina : staminaCostPerHit;
+
+    void PerformAttackHit(bool cargado = false)
     {
-        // 1. Detección física en esfera frontal cerrada frente a los puños del jugador
-        Vector3 hitCenter = transform.position + transform.forward * 1.0f + Vector3.up * 0.8f;
-        Collider[] hits = Physics.OverlapSphere(hitCenter, attackRange);
+        golpeCargado = cargado;
+        var arma = Armas.Equipada;
+        float alcance = attackRange + (arma != null ? arma.alcance : 0f);
+        float cono = arma != null ? arma.cono * 0.5f + 20f : 70f;
+        bool area = arma != null && arma.area;
+        // 1. Detección física en esfera frontal (las armas largas llegan mas lejos)
+        Vector3 hitCenter = transform.position + transform.forward * (1.0f + (arma != null ? arma.alcance * 0.5f : 0f)) + Vector3.up * 0.8f;
+        Collider[] hits = Physics.OverlapSphere(hitCenter, alcance);
 
         bool hitFound = false;
+        var golpeados = new System.Collections.Generic.HashSet<RatHealth>();
         foreach (var hit in hits)
         {
             if (hit.gameObject == gameObject) continue;
 
             var ratHealth = hit.GetComponentInParent<RatHealth>();
-            if (ratHealth != null && !ratHealth.IsDead)
+            if (ratHealth != null && !ratHealth.IsDead && !golpeados.Contains(ratHealth))
             {
-                // Verificar que el impacto esté dentro de un cono frontal de 70 grados
+                // Verificar que el impacto esté dentro del cono frontal del arma
                 Vector3 toTarget = hit.bounds.center - transform.position;
                 toTarget.y = 0f;
-                if (toTarget.sqrMagnitude > 0.001f && Vector3.Angle(transform.forward, toTarget.normalized) <= 70f)
+                if (toTarget.sqrMagnitude > 0.001f && Vector3.Angle(transform.forward, toTarget.normalized) <= cono)
                 {
+                    golpeados.Add(ratHealth);
                     ApplyHitToRat(ratHealth);
                     hitFound = true;
-                    break;
+                    if (!area) break;           // el mazo golpea a todos los de delante
                 }
             }
         }
 
-        // 2. Respaldo directo estricto por proximidad (únicamente si la rata está a distancia cuerpo a cuerpo <= 2.2m)
+        // 2. Respaldo directo estricto por proximidad
         if (!hitFound)
         {
+            float maxDist = 2.2f + (arma != null ? arma.alcance : 0f);
             var allRats = Object.FindObjectsByType<RatHealth>(FindObjectsInactive.Exclude);
             foreach (var ratHealth in allRats)
             {
@@ -395,11 +474,10 @@ public class PlayerController : MonoBehaviour
                 toPoint.y = 0f;
                 float horizontalDistance = toPoint.magnitude;
 
-                // Alcance máximo cuerpo a cuerpo estricto: 2.2 metros
-                if (horizontalDistance <= 2.2f)
+                if (horizontalDistance <= maxDist)
                 {
                     float angle = Vector3.Angle(transform.forward, toPoint.normalized);
-                    if (angle <= 70f) // Frente a la vista del jugador
+                    if (angle <= cono) // Frente a la vista del jugador
                     {
                         ApplyHitToRat(ratHealth);
                         hitFound = true;
@@ -412,34 +490,57 @@ public class PlayerController : MonoBehaviour
         OnPunch?.Invoke(hitFound);
     }
 
+    bool golpeCargado;
+    RatHealthBarUI barraEnemigo;
+
     private void ApplyHitToRat(RatHealth ratHealth)
     {
-        ratHealth.TakeDamage(attackDamage);
-        var hudBar = Object.FindAnyObjectByType<RatHealthBarUI>();
-        if (hudBar != null) hudBar.FocusOn(ratHealth);
+        var arma = Armas.Equipada;
+        float baseDanio = arma != null ? arma.danio : attackDamage;
+        float danio = baseDanio * (golpeCargado ? heavyDamageMultiplier : 1f) * Mejoras.MultDanio;
+        float hecho;
+        if (arma != null && arma.rompeCorazas && ratHealth.DamageFilter != null)
+        {
+            // las tenazas muerden a traves del caparazon: se salta la armadura de la IA
+            var filtro = ratHealth.DamageFilter;
+            ratHealth.DamageFilter = null;
+            hecho = ratHealth.TakeDamage(danio);
+            ratHealth.DamageFilter = filtro;
+            if (hecho > 0f) Juice.Chispas(ratHealth.transform.position + Vector3.up * 0.6f, new Color(0.7f, 0.85f, 1f), 10, 3f);
+        }
+        else hecho = ratHealth.TakeDamage(danio);
+        if (arma != null && arma.veneno > 0f && hecho > 0f && !ratHealth.IsDead) VenenoBicho.Aplicar(ratHealth, arma.veneno, 5f);
+        if (barraEnemigo == null) barraEnemigo = Object.FindAnyObjectByType<RatHealthBarUI>();
+        if (barraEnemigo != null) barraEnemigo.FocusOn(ratHealth);
+        SensacionGolpe.AlGolpear(this, ratHealth, hecho, golpeCargado);
+
+        // empuje del arma (martillo y mazo mandan lejos): se escala el retroceso de la IA un momento
+        float empuje = arma != null ? arma.empuje : 1f;
+        Vector3 knockbackDir = ratHealth.transform.position - transform.position;
+        knockbackDir.y = 0f; knockbackDir.Normalize();
 
         var ratAI = ratHealth.GetComponent<RatAI>();
         if (ratAI != null)
         {
-            Vector3 knockbackDir = (ratHealth.transform.position - transform.position).normalized;
-            knockbackDir.y = 0f;
+            float d0 = ratAI.knockbackDistance; ratAI.knockbackDistance = d0 * empuje;
             ratAI.TakeHit(knockbackDir);
+            ratAI.knockbackDistance = d0;
         }
 
         var creatureAI = ratHealth.GetComponent<CreatureAI>();
         if (creatureAI != null)
         {
-            Vector3 knockbackDir = (ratHealth.transform.position - transform.position).normalized;
-            knockbackDir.y = 0f;
+            float d0 = creatureAI.knockbackDistance; creatureAI.knockbackDistance = d0 * empuje;
             creatureAI.TakeHit(knockbackDir);
+            creatureAI.knockbackDistance = d0;
         }
 
         var spiderAI = ratHealth.GetComponent<SpiderAI>();
         if (spiderAI != null)
         {
-            Vector3 knockbackDir = (ratHealth.transform.position - transform.position).normalized;
-            knockbackDir.y = 0f;
+            float d0 = spiderAI.knockbackDistance; spiderAI.knockbackDistance = d0 * empuje;
             spiderAI.TakeHit(knockbackDir);
+            spiderAI.knockbackDistance = d0;
         }
     }
 
@@ -464,6 +565,41 @@ public class PlayerController : MonoBehaviour
         animator.ResetTrigger("Attack2");
         animator.ResetTrigger("HeavyAttack");
         animator.ResetTrigger("BlockTrigger");
+    }
+
+    // ------------------------------------------------------------------ ayudas de control
+    bool HayHuecoParaLevantarse()
+    {
+        float r = controller.radius * 0.9f;
+        Vector3 pie = transform.position + Vector3.up * (crouchHeight - r);
+        float sube = originalHeight - crouchHeight;
+        RaycastHit h;
+        return !Physics.SphereCast(pie, r, Vector3.up, out h, sube + 0.02f, ~0, QueryTriggerInteraction.Ignore);
+    }
+
+    /// <summary>
+    /// Correccion de esquinas (Alva Majo / Super Mario Bros): si al saltar la cabeza roza el borde
+    /// de algo, el personaje se recoloca un poco hacia el lado libre en vez de darse el cabezazo.
+    /// </summary>
+    bool CorregirEsquina()
+    {
+        float r = controller.radius;
+        Vector3 cabeza = transform.position + controller.center + Vector3.up * (controller.height * 0.5f - r);
+        Vector3 fwd = transform.forward; fwd.y = 0f; fwd.Normalize();
+        Vector3 der = Vector3.Cross(Vector3.up, fwd);
+        Vector3[] dirs = { der, -der, fwd, -fwd, (der + fwd).normalized, (fwd - der).normalized, (der - fwd).normalized, (-fwd - der).normalized };
+        RaycastHit h;
+        for (float paso = 0.15f; paso <= r * 1.1f + 0.01f; paso += 0.15f)
+            foreach (var d in dirs)
+            {
+                Vector3 p = cabeza + d * paso;
+                // hueco libre encima de la nueva posicion y camino libre hasta ella
+                if (Physics.CheckSphere(p + Vector3.up * 0.12f, r * 0.95f, ~0, QueryTriggerInteraction.Ignore)) continue;
+                if (Physics.SphereCast(cabeza, r * 0.9f, d, out h, paso, ~0, QueryTriggerInteraction.Ignore)) continue;
+                controller.Move(d * paso);
+                return true;
+            }
+        return false;
     }
 
     void ResetCombo()

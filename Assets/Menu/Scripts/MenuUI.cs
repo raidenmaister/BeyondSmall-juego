@@ -372,6 +372,8 @@ public class MenuUI : MonoBehaviour
             case 3:
                 p.filas.Add(Deslizador("Sensibilidad de la camara", () => Ajustes.Sensibilidad, v => Ajustes.Sensibilidad = v, 0.2f, 3f, 0.1f, v => v.ToString("0.0") + "x"));
                 p.filas.Add(Opcion("Invertir eje vertical", () => SiNo, () => Ajustes.InvertirY ? 0 : 1, k => Ajustes.InvertirY = k == 0));
+                p.filas.Add(Deslizador("Temblor y efectos de golpe", () => Ajustes.Temblor, v => Ajustes.Temblor = v, 0f, 1.5f, 0.1f, Porcentaje));
+                p.filas.Add(Opcion("Pistas del objetivo", () => SiNo, () => Ajustes.Pistas ? 0 : 1, k => Ajustes.Pistas = k == 0));
                 p.filas.Add(Opcion("Autoguardado", () => NombresAutoguardado, () => System.Array.IndexOf(MinutosAutoguardado, Ajustes.AutoguardadoMin) is int x && x >= 0 ? x : 5, k => Ajustes.AutoguardadoMin = MinutosAutoguardado[k]));
                 p.filas.Add(Boton("Restablecer opciones", () => { Ajustes.Restablecer(); RefrescarValores(Actual); Sonar(recursos.sonidoAceptar); }));
                 break;
@@ -1049,7 +1051,7 @@ public class MenuUI : MonoBehaviour
     {
         if (abierto || ocupado) return false;
         if (!Input.GetKeyDown(KeyCode.Escape)) return false;
-        if (IntroDespertar.Activa || GestorPartida.Muerto || MapaUI.BloqueaPausa || FinalJuego.Activo) return false;
+        if (IntroDespertar.Activa || GestorPartida.Muerto || MapaUI.BloqueaPausa || PanelMisiones.BloqueaPausa || FinalJuego.Activo) return false;
         var pc = FindAnyObjectByType<PlayerController>();
         if (pc != null && pc.InventarioAbierto) return false;
         if (ControladorInventario.Instance != null && ControladorInventario.Instance.IsOpen) return false;

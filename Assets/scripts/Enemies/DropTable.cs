@@ -92,6 +92,8 @@ public class DropTable : MonoBehaviour
                 var rb = go.GetComponent<Rigidbody>();
                 if (rb != null) rb.AddForce((dir + Vector3.up * 1.4f).normalized * Random.Range(1.0f, 1.8f), ForceMode.Impulse);
                 if (FloorItemPromptManager.Instance != null) FloorItemPromptManager.Instance.RegisterTrackedItem(go);
+                // Guinxu: el loot aparece con un squash and stretch en vez de surgir sin mas
+                go.AddComponent<AparecerLoot>();
                 spawned++;
             }
         }

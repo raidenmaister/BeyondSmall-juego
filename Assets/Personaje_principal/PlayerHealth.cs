@@ -24,6 +24,12 @@ public class PlayerHealth : MonoBehaviour
 
     public System.Action<float, float> OnHealthChanged;
     public System.Action OnDeath;
+    /// <summary>Golpe de un animal que entro (despues del escudo): para el juice de recibir daño.</summary>
+    public System.Action<float> AlRecibirGolpe;
+
+    [Tooltip("Tras un golpe, un instante de invulnerabilidad para que no te encadenen golpes sin poder reaccionar.")]
+    public float invulnerableTrasGolpe = 0.35f;
+    float invulnerableHasta;
 
     private void Awake()
     {
@@ -54,8 +60,15 @@ public class PlayerHealth : MonoBehaviour
     public void TakeDamage(float amount, bool bloqueable)
     {
         if (!Partida.Agresivos) return;
+        if (bloqueable && Time.time < invulnerableHasta) return;
         if (bloqueable && Escudo.Instancia != null) amount = Escudo.Instancia.Filtrar(amount);
         DanioEntorno(amount);
+        if (bloqueable && amount >= 1f && !IsDead)
+        {
+            invulnerableHasta = Time.time + invulnerableTrasGolpe;
+            AlRecibirGolpe?.Invoke(amount);
+        }
+        else if (bloqueable && IsDead) AlRecibirGolpe?.Invoke(amount);
     }
 
     /// <summary>Daño que no viene de animales (hambre): cuenta en todas las dificultades.</summary>

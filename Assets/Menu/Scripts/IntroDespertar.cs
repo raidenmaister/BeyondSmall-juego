@@ -21,7 +21,7 @@ public class IntroDespertar : MonoBehaviour
 
     public AudioClip encendido, zumbido, carga, encoger, apagado, latido, respiro;
     public TMP_FontAsset fuente;
-    [TextArea] public string[] pensamientos = { "...¿que fue ese ruido?", "¿Por que todo se ve tan... enorme?" };
+    [TextArea] public string[] pensamientos = { "...¿que fue ese ruido?", "¿Por que todo se ve tan... <temblor>enorme</temblor>?", "La cabina... si la enciendo, quiza vuelva a mi tamaño." };
 
     Canvas canvas;
     Image negro, brillo, parpadoArriba, parpadoAbajo;
@@ -240,10 +240,13 @@ public class IntroDespertar : MonoBehaviour
 
     IEnumerator Pensar(string s)
     {
-        textoPensamiento.text = s;
-        for (float t = 0f; t < 3.4f; t += Time.unscaledDeltaTime)
+        // se escribe solo, con pausas en la puntuacion y la palabra clave temblando
+        var vivo = TextoVivo.Escribir(textoPensamiento, s, 30f);
+        vivo.sonidoLetra = SonidosJuice.Letra;
+        float dur = 2.4f + TextoVivo.Limpio(s).Length * 0.045f;
+        for (float t = 0f; t < dur; t += Time.unscaledDeltaTime)
         {
-            float a = Mathf.Clamp01(t / 0.6f) * Mathf.Clamp01((3.4f - t) / 0.8f);
+            float a = Mathf.Clamp01(t / 0.3f) * Mathf.Clamp01((dur - t) / 0.8f);
             textoPensamiento.color = new Color(0.9f, 0.95f, 0.95f, a);
             yield return null;
         }

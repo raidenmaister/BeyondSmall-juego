@@ -98,6 +98,21 @@ public static class IconosMapa
         return c;
     }, new Vector2(0.5f, 0.5f));
 
+    /// <summary>Señal de una bateria verde (la brujula): pila verde con ondas.</summary>
+    public static Sprite Bateria() => Hacer("bateria", (u, v) =>
+    {
+        Color c = Color.clear;
+        c = Sobre(c, new Color(0.3f, 1f, 0.5f, 0.55f * Anillo(u, v, 0, 0, 0.84f, 0.06f)));
+        float cuerpo = Mathf.Clamp01((0.32f - Mathf.Abs(u)) * 40f) * Mathf.Clamp01((0.52f - Mathf.Abs(v + 0.05f)) * 40f);
+        float borde = Mathf.Clamp01((0.42f - Mathf.Abs(u)) * 40f) * Mathf.Clamp01((0.62f - Mathf.Abs(v + 0.05f)) * 40f);
+        float polo = Mathf.Clamp01((0.15f - Mathf.Abs(u)) * 40f) * Mathf.Clamp01((0.1f - Mathf.Abs(v - 0.66f)) * 40f);
+        c = Sobre(c, new Color(0.08f, 0.14f, 0.1f, Mathf.Max(borde, polo)));
+        c = Sobre(c, new Color(0.3f, 1f, 0.5f, cuerpo));
+        float rayo = Mathf.Clamp01((0.07f - Mathf.Abs(u - v * 0.35f)) * 40f) * Mathf.Clamp01((0.36f - Mathf.Abs(v + 0.05f)) * 40f);
+        c = Sobre(c, new Color(0.95f, 1f, 0.9f, rayo));
+        return c;
+    }, new Vector2(0.5f, 0.5f));
+
     public static Sprite Lugar(MapaMundo.TipoLugar tipo)
     {
         switch (tipo)
