@@ -24542,7 +24542,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AmbientSound
   ambienteDia: {fileID: 8300000, guid: 668ef0dba56975a4e8f418e633cdf31a, type: 3}
   volumenDia: 0.45
-  volumenNoche: 0.05
+  volumenNoche: 0
 --- !u!4 &130091192
 Transform:
   m_ObjectHideFlags: 0
@@ -70402,7 +70402,7 @@ MonoBehaviour:
   sol: {fileID: 1841956982}
   luna: {fileID: 651703571}
   intensidadSol: 2.2
-  intensidadLuna: 0.6
+  intensidadLuna: 1
   azimut: 150
   inclinacion: 25
   inclinacionLuna: 50
@@ -155887,13 +155887,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FireflySwarm
   prefab: {fileID: 1267256982169490400, guid: 6559b9eccec15f74da217acb47dde21e, type: 3}
   jugador: {fileID: 745994339}
-  cantidad: 60
-  acompanantes: 22
-  radioJugador: {x: 3, y: 11}
+  cantidad: 36
+  enSalon: 12
+  radioJardin: {x: 12, y: 50}
+  distanciaRelevo: 75
   centroZona: {x: 0.5918503, y: 0, z: -5.5999985}
   tamanoZona: {x: 135.7286, y: 10, z: 156.73178}
   nocheParaLlegar: 0.55
   conAntorcha: 0.3
+  intensidadLuz: 2.2
+  rangoLuz: 5
 --- !u!4 &625536399
 Transform:
   m_ObjectHideFlags: 0

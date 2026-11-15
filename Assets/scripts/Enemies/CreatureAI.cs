@@ -101,6 +101,35 @@ public class CreatureAI : MonoBehaviour
 
     CreatureVisual Main { get { return visuals != null && visuals.Length > 0 ? visuals[0] : null; } }
 
+    // ------------------------------------------------------------------ de noche
+    // Las mariposas y las abejas de fuera no vuelan de noche: se posan en el suelo hasta que amanece.
+    ModeloVivo modeloVivo; bool buscadoModelo;
+    bool Dormida()
+    {
+        if (kind != Kind.Butterfly && kind != Kind.Bee) return false;
+        var dn = DayNightCycle.Instance;
+        return dn != null && dn.Noche > 0.65f;
+    }
+
+    void Posar(bool posada)
+    {
+        if (!buscadoModelo) { buscadoModelo = true; modeloVivo = GetComponentInChildren<ModeloVivo>(); }
+        if (modeloVivo != null) modeloVivo.posado = posada;
+    }
+
+    /// <summary>Quieta en el suelo. Devuelve false si el jugador la ha despertado (demasiado cerca).</summary>
+    bool Dormir(float dt, float dist, float despierta)
+    {
+        if (dist < despierta) { Posar(false); return false; }
+        var pos = transform.position;
+        if (!enSalon) groundY = ZonaJuego.Altura(pos.x, pos.z) + sueloOffset;
+        pos.y = Mathf.MoveTowards(pos.y, groundY + 0.12f, 1.5f * dt);
+        transform.position = pos;
+        SetMove(0f);
+        Posar(Mathf.Abs(pos.y - groundY - 0.12f) < 0.05f);
+        return true;
+    }
+
     void Awake()
     {
         // Se mueven por transform: un collider sólido empuja al CharacterController del jugador a través del piso
@@ -552,6 +581,9 @@ public class CreatureAI : MonoBehaviour
     void UpdateBee(float dt, Vector3 toPlayer, float dist)
     {
         var cv = Main;
+        // de noche duerme posada (solo pica si la pisan o la atacan: el golpe la pone en Chase)
+        if (Dormida() && (state == S.Idle || state == S.Return) && Dormir(dt, dist, 2.5f)) return;
+        Posar(false);
         if (!enSalon) groundY = ZonaJuego.Altura(transform.position.x, transform.position.z) + sueloOffset;
         float targetY = groundY + flyHeight + Mathf.Sin(Time.time * 3f + seed) * 0.25f;
         var pos = transform.position;
@@ -688,6 +720,9 @@ public class CreatureAI : MonoBehaviour
     void UpdateButterfly(float dt, Vector3 toPlayer, float dist)
     {
         var cv = Main;
+        // de noche duerme posada; solo sale volando si el jugador casi la pisa
+        if (Dormida() && Dormir(dt, dist, 3f)) return;
+        Posar(false);
         var pos = transform.position;
         if (!enSalon) groundY = ZonaJuego.Altura(pos.x, pos.z) + sueloOffset;
         float targetY = groundY + flyHeight + Mathf.Sin(Time.time * 2.3f + seed) * 0.5f;

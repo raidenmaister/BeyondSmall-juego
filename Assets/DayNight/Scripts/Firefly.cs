@@ -1,5 +1,6 @@
 using UnityEngine;
 
+// (Apagadas se reinicia al empezar la partida, ver Reiniciar)
 // Una luciernaga: vuela deambulando alrededor de un punto "hogar", aletea,
 // y su abdomen emite una luz verde que pulsa. Llega al anochecer saliendo
 // de la vegetacion y se va volando hacia el cielo al amanecer.
@@ -43,6 +44,9 @@ public class Firefly : MonoBehaviour
     static readonly int GlowId = Shader.PropertyToID("_Glow");
     static readonly int IntensityId = Shader.PropertyToID("_Intensity");
     const int MascaraSuelo = ~(1 << 2); // todo menos "Ignore Raycast"
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void Reiniciar() { Apagadas = false; }
 
     void Awake()
     {
@@ -190,13 +194,16 @@ public class Firefly : MonoBehaviour
         return p;
     }
 
+    /// <summary>El jugador esta bajo tierra o dentro del arbol: las luces de las luciernagas de fuera no lo alcanzan.</summary>
+    public static bool Apagadas;
+
     void AplicarBrillo(float b)
     {
         if (luz != null)
         {
             luz.intensity = intensidadLuz * b;
             luz.range = rangoLuz;
-            luz.enabled = b > 0.01f;
+            luz.enabled = b > 0.01f && !Apagadas;
         }
         if (linterna != null)
         {

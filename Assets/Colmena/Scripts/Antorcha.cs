@@ -85,6 +85,8 @@ public class Antorcha : MonoBehaviour
         }
         teniaAntes = n;
         if (Encendida && n <= 0) Poner(false);
+        // metido en el agua de la cloaca: el fuego se apaga (y no se puede encender hasta salir)
+        if (Encendida && EnAgua()) { Poner(false); Aviso.Mostrar("El agua apaga la antorcha", new Color(0.6f, 0.75f, 1f), 2.5f); }
         if (Controles.Bajada(Controles.Accion.Antorcha)) Alternar();
         if (Encendida && modeloMano != null) Posicion = modeloMano.transform.position;
         if (fuego != null) fuego.volume = Encendida ? 0.45f * Ajustes.VolEfectos : 0f;
@@ -141,9 +143,12 @@ public class Antorcha : MonoBehaviour
         antebrazo.rotation = Quaternion.Slerp(antebrazo.rotation, rAnte, w);
     }
 
+    static bool EnAgua() => Cloaca.Instancia != null && Cloaca.Instancia.JugadorEnAgua;
+
     void Alternar()
     {
         if (!Encendida && Cuantas <= 0) return;
+        if (!Encendida && EnAgua()) { Aviso.Mostrar("No se puede encender la antorcha dentro del agua", new Color(0.6f, 0.75f, 1f), 2.5f); return; }
         Poner(!Encendida);
     }
 

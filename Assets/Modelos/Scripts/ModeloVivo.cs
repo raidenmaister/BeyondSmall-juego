@@ -19,6 +19,7 @@ public class ModeloVivo : MonoBehaviour
         public float giroX;                   // modelos que vienen de pie (la lombriz trae el cuerpo hacia arriba)
         public float escala = 1f;             // ajuste fino sobre el tamaño del modelo viejo
         public string[] reposo, caminar, correr, ataque, muerte;
+        public string[] posado;                         // quieto en el suelo (abeja dormida de noche)
         public float velCaminar = 1.5f, velCorrer = 4f;   // unidades/s en las que el clip se ve a velocidad normal
         public string[] ocultar = new string[0];         // piezas del modelo que sobran (suelos, sombras pegadas)
         public bool volador;
@@ -31,7 +32,7 @@ public class ModeloVivo : MonoBehaviour
     {
         { "Hormiga", new Def { modelo = "Hormiga", reposo = new[] { "Take 001" }, caminar = new[] { "Take 001" }, velCaminar = 2f } },
         { "ReinaHormiga", new Def { modelo = "ReinaHormiga", reposo = new[] { "idle" }, caminar = new[] { "Walk" }, correr = new[] { "Walk" }, ataque = new[] { "bite", "Attack2", "grab" }, velCaminar = 3f } },
-        { "Abeja", new Def { modelo = "Abeja", reposo = new[] { "_bee_hover" }, caminar = new[] { "_bee_hover" }, volador = true } },
+        { "Abeja", new Def { modelo = "Abeja", reposo = new[] { "_bee_hover" }, caminar = new[] { "_bee_hover" }, posado = new[] { "_bee_idle" }, volador = true } },
         { "Rata", new Def { modelo = "Rata", reposo = new[] { "idle_A1", "idle_A2" }, caminar = new[] { "walk_A1" }, correr = new[] { "run_A1" }, velCaminar = 2f, velCorrer = 5f } },
         { "Oruga", new Def { modelo = "Oruga", giroY = 180f, reposo = new[] { "ArmatureAction" }, caminar = new[] { "ArmatureAction" }, velCaminar = 0.8f, ocultar = new[] { "shadow_0" } } },   // trae una sombra falsa plana que sale como motas
         { "Mariposa", new Def { modelo = "Mariposa", reposo = new[] { "|!" }, caminar = new[] { "|2" }, correr = new[] { "|3" }, volador = true } },
@@ -62,7 +63,9 @@ public class ModeloVivo : MonoBehaviour
     PlayableGraph grafo;
     AnimationMixerPlayable mezcla;
     readonly List<AnimationClipPlayable> clips = new List<AnimationClipPlayable>();
-    int iReposo = -1, iCaminar = -1, iCorrer = -1, iAtaque = -1, iMuerte = -1;
+    int iReposo = -1, iCaminar = -1, iCorrer = -1, iAtaque = -1, iMuerte = -1, iPosado = -1;
+    /// <summary>Lo pone la IA: el bicho esta posado y quieto (usa la animacion "posado" si el modelo la tiene).</summary>
+    [HideInInspector] public bool posado;
     Vector3 posAnterior;
     float velSuave, tAtaque = -1f, signo = 1f, calibrado;
     // rendimiento: el grafo se evalua a mano, solo si se ve y menos veces por segundo cuanto mas lejos
@@ -222,6 +225,7 @@ public class ModeloVivo : MonoBehaviour
         grafo.SetTimeUpdateMode(DirectorUpdateMode.Manual);   // lo avanza Update (ver Evaluar)
         mezcla = AnimationMixerPlayable.Create(grafo, 0);
         iReposo = Añadir(todos, def.reposo, true);
+        iPosado = Añadir(todos, def.posado, true);
         iCaminar = Añadir(todos, def.caminar, true);
         iCorrer = Añadir(todos, def.correr, true);
         iAtaque = Añadir(todos, def.ataque, false);
@@ -412,6 +416,7 @@ public class ModeloVivo : MonoBehaviour
         if (pesos == null || pesos.Length != n) pesos = new float[n];
         var w = pesos; System.Array.Clear(w, 0, n);
         if (muerto && iMuerte >= 0) w[iMuerte] = 1f;
+        else if (posado && iPosado >= 0) w[iPosado] = 1f;
         else if (tAtaque >= 0f && iAtaque >= 0)
         {
             tAtaque += dt;
