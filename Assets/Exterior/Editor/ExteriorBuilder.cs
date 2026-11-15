@@ -215,6 +215,7 @@ public static class ExteriorBuilder
                 // hueco del hormiguero: ahi el suelo lo pone la malla del monticulo
                 if (ZonaJuego.DistanciaHormiguero(ce.x, ce.z) < ZonaJuego.hormigueroRadio) continue;
                 if (ZonaJuego.DistanciaArbol(ce.x, ce.z) < ZonaJuego.arbolRadio - 1f) continue;   // ahi el suelo lo pone el arbol
+                if (ZonaJuego.EnHuecoCloaca(ce.x, ce.z)) continue;   // derrumbe y rejilla: ahi el suelo lo pone la cloaca
                 tris.AddRange(new[] { a, d, b, b, d, e });
             }
         var m = new Mesh { name = "SueloExterior", indexFormat = verts.Count > 65000 ? IndexFormat.UInt32 : IndexFormat.UInt16 };
@@ -682,6 +683,7 @@ public static class ExteriorBuilder
             if (ZonaJuego.DistanciaEdificio(x, z) < 35f) continue;
             if (ZonaJuego.DistanciaHormiguero(x, z) < ZonaJuego.hormigueroRadio + 25f) continue;
             if (ZonaJuego.DistanciaArbol(x, z) < ZonaJuego.arbolRadio + 30f) continue;
+            if (ZonaJuego.DistanciaCloaca(x, z) < 30f) continue;
             bool ok = true;
             foreach (var s in solidos) { float dx = s.x - x, dz = s.z - z, rr = s.y + 6f; if (dx * dx + dz * dz < rr * rr) { ok = false; break; } }
             if (!ok) continue;

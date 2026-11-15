@@ -152,6 +152,23 @@ public static class IconosMapa
                 c = Sobre(c, new Color(0.35f, 0.22f, 0.05f, Anillo(u, v, 0.05f, -0.05f, 0.2f, 0.035f)));
                 return c;
             }, new Vector2(0.5f, 0.5f));
+            case MapaMundo.TipoLugar.Cloaca: return Hacer("cloaca", (u, v) =>
+            {
+                // tapa de alcantarilla vista desde arriba: aro de hierro con rejilla y una rata asomada
+                Color c = Color.clear;
+                c = Sobre(c, new Color(0.3f, 0.3f, 0.32f, Circulo(u, v, 0, 0, 0.86f)));
+                c = Sobre(c, new Color(0.06f, 0.07f, 0.06f, Circulo(u, v, 0, 0, 0.66f)));
+                float barras = (Mathf.Abs(Mathf.Repeat(u * 3.2f + 0.5f, 1f) - 0.5f) < 0.16f ? 1f : 0f) * Circulo(u, v, 0, 0, 0.66f);
+                c = Sobre(c, new Color(0.42f, 0.42f, 0.44f, barras));
+                c = Sobre(c, new Color(Tinta.r, Tinta.g, Tinta.b, Anillo(u, v, 0, 0, 0.86f, 0.05f)));
+                // la rata: cabeza gris con ojos rojos
+                c = Sobre(c, new Color(0.45f, 0.4f, 0.38f, Circulo(u, v, 0.3f, -0.3f, 0.26f)));
+                c = Sobre(c, new Color(0.45f, 0.4f, 0.38f, Circulo(u, v, 0.14f, -0.12f, 0.1f)));
+                c = Sobre(c, new Color(0.45f, 0.4f, 0.38f, Circulo(u, v, 0.48f, -0.14f, 0.1f)));
+                c = Sobre(c, new Color(0.9f, 0.15f, 0.1f, Circulo(u, v, 0.22f, -0.26f, 0.045f)));
+                c = Sobre(c, new Color(0.9f, 0.15f, 0.1f, Circulo(u, v, 0.38f, -0.26f, 0.045f)));
+                return c;
+            }, new Vector2(0.5f, 0.5f));
             default: return Hacer("marca", (u, v) => new Color(Tinta.r, Tinta.g, Tinta.b, Anillo(u, v, 0, 0, 0.55f, 0.1f)), new Vector2(0.5f, 0.5f));
         }
     }

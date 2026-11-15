@@ -1,0 +1,14 @@
+Texturas de Poly Haven (CC0): castle_brick_02_red, dirty_concrete, rusty_metal_02, concrete_moss.
+Ademas usa forest_ground_04 del exterior y excavated_soil_wall / brown_mud_dry del hormiguero (tierra del derrumbe).
+Sonidos de Freesound.org (CC0):
+Cloaca_Ambiente  https://freesound.org/s/545663/   (Nox_Sound, Ambiance_Stream_Sewer_Small_Loop)
+Cloaca_Goteo     https://freesound.org/s/790826/   (kynodelia, Drops falling into a sewer)
+Rey_Rugido       https://freesound.org/s/345733/   (noahpardo, Deep Growl 1)
+Rey_Siseo        https://freesound.org/s/160350/   (qubodup, Hiss)
+Rey_Chillido     https://freesound.org/s/788212/   (Phorgador, Screech)
+Rata_Chillido    https://freesound.org/s/288941/   (toefur, rat-squeak)
+Rata_Chillido2   https://freesound.org/s/536753/   (egomassive, Rat)
+Agua_Chapoteo    https://freesound.org/s/199452/   (martinimeniscus, Water Splashes on cement)
+Cascada          https://freesound.org/s/274259/   (kwahmah_02, Waterfall Loop)
+Ratas y Rey Rata: modelo de rata del proyecto (Assets/Rata_muerte.fbx, con sus animaciones); el rey escalado, oscurecido y con corona.
+Tuneles, rejilla, derrumbe, agua, basura, comida, tuberias y corona: generados por codigo (CloacaBuilder).

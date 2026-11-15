@@ -80,7 +80,9 @@ public class DayNightCycle : MonoBehaviour
     public static float factorSubterraneo;
     /// <summary>Dentro del arbol hueco: como factorSubterraneo pero lo controla la colmena (se usa el mayor de los dos).</summary>
     public static float factorInterior;
-    public static float Encierro => Mathf.Max(factorSubterraneo, factorInterior);
+    /// <summary>Dentro de la cloaca: lo controla Cloaca.</summary>
+    public static float factorCloaca;
+    public static float Encierro => Mathf.Max(Mathf.Max(factorSubterraneo, factorInterior), factorCloaca);
     public Color ambienteCueva = new Color(0.16f, 0.14f, 0.12f);
     public Color nieblaCueva = new Color(0.025f, 0.02f, 0.016f);
     public float densidadNieblaCueva = 0.011f;

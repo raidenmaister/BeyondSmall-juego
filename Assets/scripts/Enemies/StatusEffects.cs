@@ -9,6 +9,7 @@ public class StatusEffects : MonoBehaviour
     static StatusEffects instance;
 
     float slowMult = 1f, slowUntil;
+    string slowTexto;
     float poisonDps, poisonUntil, poisonTick;
     PlayerHealth health;
 
@@ -28,10 +29,14 @@ public class StatusEffects : MonoBehaviour
         return instance;
     }
 
-    public static void Slow(float multiplier, float seconds)
+    public static void Slow(float multiplier, float seconds) { Slow(multiplier, seconds, null); }
+
+    /// <summary>texto: lo que se muestra mientras dura (null = telaraña). Sin tiempo si empieza con '~'.</summary>
+    public static void Slow(float multiplier, float seconds, string texto)
     {
         var s = Get();
         if (s == null) return;
+        s.slowTexto = texto;
         s.slowMult = Mathf.Clamp(multiplier, 0.1f, 1f);
         s.slowUntil = Mathf.Max(s.slowUntil, Time.time + seconds);
     }
@@ -83,7 +88,9 @@ public class StatusEffects : MonoBehaviour
         if (slow)
         {
             style.normal.textColor = new Color(0.9f, 0.9f, 1f);
-            GUI.Label(new Rect(20, y, 300, 22), "Atrapado en telarana (" + (slowUntil - Time.time).ToString("F1") + "s)", style);
+            string t = string.IsNullOrEmpty(slowTexto) ? "Atrapado en telarana" : slowTexto;
+            if (t.StartsWith("~")) GUI.Label(new Rect(20, y, 300, 22), t.Substring(1), style);
+            else GUI.Label(new Rect(20, y, 300, 22), t + " (" + (slowUntil - Time.time).ToString("F1") + "s)", style);
         }
     }
 }

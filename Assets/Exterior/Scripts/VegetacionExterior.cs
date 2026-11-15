@@ -226,6 +226,7 @@ public class VegetacionExterior : MonoBehaviour
                 if (ZonaJuego.DistanciaEdificio(x, z) < p.margenEdificio) continue;
                 if (ZonaJuego.DistanciaHormiguero(x, z) < ZonaJuego.hormigueroRadio + 2f) continue;   // monticulo del hormiguero
                 if (ZonaJuego.DistanciaArbol(x, z) < ZonaJuego.arbolRadio + (p.exclusion > 0f ? 14f : 2f)) continue;   // tronco del arbol
+                if (ZonaJuego.DistanciaCloaca(x, z) < (p.exclusion > 0f ? 12f : 1.5f)) continue;   // derrumbe y rejilla de la cloaca
                 if (p.agrupamiento > 0f)
                 {
                     float m = Mathf.PerlinNoise(x * p.frecuenciaManchas + semMancha, z * p.frecuenciaManchas + semMancha * 0.7f);

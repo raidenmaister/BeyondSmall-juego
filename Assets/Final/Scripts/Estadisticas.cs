@@ -36,7 +36,7 @@ public class Estadisticas
     {
         ("Hormiga", "Hormigas"), ("Abeja", "Abejas"), ("Arana", "Arañas"), ("Escarabajo", "Escarabajos"),
         ("Ciempies", "Ciempies"), ("Oruga", "Orugas"), ("Cochinilla", "Cochinillas"), ("Lombriz", "Lombrices"),
-        ("Mariposa", "Mariposas"), ("Rata", "Ratas"), ("Larva", "Larvas"), ("ReinaHormiga", "Reina hormiga"), ("ReinaAbeja", "Reina abeja"),
+        ("Mariposa", "Mariposas"), ("Rata", "Ratas"), ("Larva", "Larvas"), ("ReinaHormiga", "Reina hormiga"), ("ReinaAbeja", "Reina abeja"), ("ReyRata", "Rey rata"),
     };
 
     public static string Tipo(GameObject go)
@@ -48,6 +48,8 @@ public class Estadisticas
         if (go.GetComponent<AbejaColmena>() != null) return "Abeja";
         if (go.GetComponent<SpiderAI>() != null) return "Arana";
         if (go.GetComponent<RatAI>() != null) return "Rata";
+        if (go.GetComponent<ReyRata>() != null) return "ReyRata";
+        if (go.GetComponent<RataCloaca>() != null) return "Rata";
         var ai = go.GetComponent<CreatureAI>();
         if (ai != null)
             switch (ai.kind)

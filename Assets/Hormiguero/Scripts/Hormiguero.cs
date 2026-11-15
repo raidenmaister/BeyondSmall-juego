@@ -135,11 +135,13 @@ public class Hormiguero : MonoBehaviour
     {
         if (jugador == null) return;
         Vector3 p = jugador.position;
-        bool dentro = zonaSubterranea.Contains(p) && p.y < ZonaJuego.Altura(p.x, p.z) - profundidadInterior;
+        // la cloaca pasa por encima de los tuneles mas al norte: ahi no se esta en el hormiguero
+        bool enZona = zonaSubterranea.Contains(p) && (Cloaca.Instancia == null || !Cloaca.Instancia.Contiene(p));
+        bool dentro = enZona && p.y < ZonaJuego.Altura(p.x, p.z) - profundidadInterior;
         JugadorDentro = dentro;
         // transicion suave al bajar por el tunel de entrada
         float objetivo = dentro ? 1f : 0f;
-        if (!dentro && zonaSubterranea.Contains(p))
+        if (!dentro && enZona)
         {
             float prof = ZonaJuego.Altura(p.x, p.z) - p.y;
             objetivo = Mathf.Clamp01(prof / profundidadInterior);

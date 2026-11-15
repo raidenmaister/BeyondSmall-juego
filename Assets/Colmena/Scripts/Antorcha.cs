@@ -16,7 +16,7 @@ public class Antorcha : MonoBehaviour
     {
         Encendida = false; instancia = null; Posicion = Vector3.zero;
         // tambien estado de otras clases que el hormiguero o la colmena dejan puesto
-        DayNightCycle.factorSubterraneo = 0f; DayNightCycle.factorInterior = 0f;
+        DayNightCycle.factorSubterraneo = 0f; DayNightCycle.factorInterior = 0f; DayNightCycle.factorCloaca = 0f;
         VegetacionExterior.ocultoGlobal = false; BosqueLejano.ocultoGlobal = false;
     }
     /// <summary>Apaga la antorcha del jugador (cinematicas).</summary>

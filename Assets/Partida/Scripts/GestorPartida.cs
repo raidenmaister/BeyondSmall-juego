@@ -342,6 +342,7 @@ public class GestorPartida : MonoBehaviour
         Vector3 p = pc.transform.position;
         if (Hormiguero.Instancia != null && Hormiguero.Instancia.JugadorDentro) return "Hormiguero";
         if (Colmena.Instancia != null && Colmena.Instancia.JugadorDentro) return "Colmena";
+        if (Cloaca.Instancia != null && Cloaca.Instancia.JugadorDentro) return "Cloaca";
         if (MaquinaCrecimiento.Instancia != null)
         {
             Vector3 c = p - MaquinaCrecimiento.Instancia.transform.position; c.y = 0f;
@@ -466,6 +467,8 @@ public class GestorPartida : MonoBehaviour
         if (h != null && Hormiguero.Instancia != null) Hormiguero.Instancia.Quitar(h);
         var a = rh.GetComponent<AbejaColmena>();
         if (a != null && Colmena.Instancia != null) Colmena.Instancia.Quitar(a);
+        var rc = rh.GetComponent<RataCloaca>();
+        if (rc != null && Cloaca.Instancia != null) Cloaca.Instancia.Quitar(rc);
         if (RatHealthBarUI.jefe == rh) RatHealthBarUI.jefe = null;
         rh.gameObject.SetActive(false);
     }

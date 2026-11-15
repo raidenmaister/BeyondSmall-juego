@@ -35,6 +35,28 @@ public static class ZonaJuego
         return Mathf.Sqrt(dx * dx + dz * dz);
     }
 
+    // cloaca: alcantarilla en el jardin; al oeste de la rejilla esta el derrumbe por donde se baja.
+    // El suelo exterior tiene huecos rectangulares (locales a la alcantarilla): ahi el suelo lo pone la malla de la cloaca.
+    // [0] tapa + derrumbe, [1] rejilla cuadrada sobre la camara del Rey Rata.
+    // Las esquinas caen en la rejilla de 4 unidades del suelo exterior (x multiplo de 4, z = 2 mod 4).
+    public static readonly Vector2 alcantarilla = new Vector2(60f, 210f);
+    public static readonly Rect[] cloacaHuecos = { Rect.MinMaxRect(-104f, -20f, 16f, 20f), Rect.MinMaxRect(212f, -4f, 220f, 4f) };
+
+    /// <summary>Distancia (en planta) al hueco de la cloaca mas cercano: 0 dentro.</summary>
+    public static float DistanciaCloaca(float x, float z)
+    {
+        float lx = x - alcantarilla.x, lz = z - alcantarilla.y, best = float.MaxValue;
+        foreach (var r in cloacaHuecos)
+        {
+            float dx = Mathf.Max(r.xMin - lx, 0f, lx - r.xMax);
+            float dz = Mathf.Max(r.yMin - lz, 0f, lz - r.yMax);
+            best = Mathf.Min(best, dx * dx + dz * dz);
+        }
+        return Mathf.Sqrt(best);
+    }
+
+    public static bool EnHuecoCloaca(float x, float z) { return DistanciaCloaca(x, z) <= 0f; }
+
     public static bool EnEdificio(Vector3 p, float margen = 0f)
     {
         return p.x > edificioMin.x - margen && p.x < edificioMax.x + margen && p.z > edificioMin.y - margen && p.z < edificioMax.y + margen;
@@ -110,6 +132,18 @@ public static class ZonaJuego
             float k = rh / dh;
             p.x = hormigueroEntrada.x + (p.x - hormigueroEntrada.x) * k;
             p.z = hormigueroEntrada.y + (p.z - hormigueroEntrada.y) * k;
+        }
+        // ni al derrumbe ni a la rejilla de la cloaca (las ratas de la cloaca no usan esto)
+        foreach (var h in cloacaHuecos)
+        {
+            float lx = p.x - alcantarilla.x, lz = p.z - alcantarilla.y, m2 = margen + 3f;
+            float l = lx - (h.xMin - m2), r = (h.xMax + m2) - lx;
+            float b = lz - (h.yMin - m2), t = (h.yMax + m2) - lz;
+            if (l > 0f && r > 0f && b > 0f && t > 0f)
+            {
+                float m = Mathf.Min(Mathf.Min(l, r), Mathf.Min(b, t));
+                if (m == l) p.x -= l; else if (m == r) p.x += r; else if (m == b) p.z -= b; else p.z += t;
+            }
         }
         if (EnEdificio(p, margen))
         {   // empujar hacia fuera por el lado mas cercano

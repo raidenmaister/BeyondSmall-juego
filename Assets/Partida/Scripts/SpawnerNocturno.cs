@@ -99,6 +99,7 @@ public class SpawnerNocturno : MonoBehaviour
     {
         if (Hormiguero.Instancia != null && Hormiguero.Instancia.JugadorDentro) return true;
         if (Colmena.Instancia != null && Colmena.Instancia.JugadorDentro) return true;
+        if (Cloaca.Instancia != null && Cloaca.Instancia.JugadorDentro) return true;
         return false;
     }
 
@@ -118,6 +119,7 @@ public class SpawnerNocturno : MonoBehaviour
                 if (ZonaJuego.EnEdificio(p, 4f)) continue;
                 if (ZonaJuego.DistanciaHormiguero(p.x, p.z) < ZonaJuego.hormigueroRadio + 8f) continue;
                 if (ZonaJuego.DistanciaArbol(p.x, p.z) < ZonaJuego.arbolRadio + 8f) continue;
+                if (ZonaJuego.DistanciaCloaca(p.x, p.z) < 10f) continue;
             }
             if ((p - jugador.position).magnitude < distancia.x * 0.6f) continue;
             p.y = ZonaJuego.Suelo(p, enSalon) + pl.alturaSuelo;

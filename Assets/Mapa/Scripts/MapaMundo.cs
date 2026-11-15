@@ -26,7 +26,7 @@ public class MapaMundo : MonoBehaviour
         new Color(0.1f, 0.75f, 0.75f), new Color(0.9f, 0.35f, 0.6f), new Color(0.35f, 0.25f, 0.2f),
     };
 
-    public enum TipoLugar { Cabina, Salon, Fogata, Puerta, Hormiguero, Arbol, Cerca }
+    public enum TipoLugar { Cabina, Salon, Fogata, Puerta, Hormiguero, Arbol, Cerca, Cloaca }
 
     public class Lugar
     {
@@ -101,6 +101,8 @@ public class MapaMundo : MonoBehaviour
         lugares.Add(new Lugar { nombre = "El hormiguero", tipo = TipoLugar.Hormiguero, pos = new Vector3(h.x, ZonaJuego.Altura(h.x, h.y), h.y) });
         var a = ZonaJuego.arbolCentro;
         lugares.Add(new Lugar { nombre = "El arbol de la colmena", tipo = TipoLugar.Arbol, pos = new Vector3(a.x, ZonaJuego.Altura(a.x, a.y), a.y) });
+        var al = ZonaJuego.alcantarilla;
+        lugares.Add(new Lugar { nombre = "La alcantarilla", tipo = TipoLugar.Cloaca, pos = new Vector3(al.x, ZonaJuego.Altura(al.x, al.y), al.y) });
         // la cerca: se marca el punto que el jugador descubra primero (norte, sur, este u oeste)
         foreach (var dir in new[] { Vector2.up, Vector2.right, Vector2.down, Vector2.left })
         {
@@ -126,6 +128,7 @@ public class MapaMundo : MonoBehaviour
     void Explorar()
     {
         if (Hormiguero.Instancia != null && Hormiguero.Instancia.JugadorDentro) return;   // bajo tierra no se ve la superficie
+        if (Cloaca.Instancia != null && Cloaca.Instancia.JugadorDentro) return;
         Vector3 p = jugador.position;
         float radio = ZonaJuego.EnEdificio(p) ? 30f : 46f;
         Revelar(new Vector2(p.x, p.z), radio);

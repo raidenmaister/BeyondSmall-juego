@@ -7,6 +7,7 @@ public class EnemyProjectile : MonoBehaviour
     public float damage = 10f;
     public float slowMultiplier = 1f;
     public float slowSeconds = 0f;
+    public string textoLento;     // lo que dice el efecto (null = telaraña)
     public float hitRadius = 1.0f;
     public float life = 4f;
 
@@ -60,7 +61,7 @@ public class EnemyProjectile : MonoBehaviour
             if ((chest - transform.position).sqrMagnitude <= hitRadius * hitRadius)
             {
                 if (playerHealth != null && damage > 0f) playerHealth.TakeDamage(damage);
-                if (slowSeconds > 0f) StatusEffects.Slow(slowMultiplier, slowSeconds);
+                if (slowSeconds > 0f) StatusEffects.Slow(slowMultiplier, slowSeconds, textoLento);
                 Destroy(gameObject);
             }
         }

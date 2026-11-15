@@ -83,7 +83,8 @@ public class ReinaHormiga : MonoBehaviour
     {
         if (estado == Estado.Muerta || jugador == null) return;
         float dt = Time.deltaTime;
-        if ((jugador.position - hogar).sqrMagnitude < 120f * 120f) RatHealthBarUI.jefe = vida;
+        // (la cloaca pasa por encima de su camara: solo cuenta si el jugador esta a su altura)
+        if ((jugador.position - hogar).sqrMagnitude < 120f * 120f && Mathf.Abs(jugador.position.y - hogar.y) < 35f) RatHealthBarUI.jefe = vida;
         Vector3 hacia = jugador.position - transform.position; hacia.y = 0f;
         float dist = hacia.magnitude;
 

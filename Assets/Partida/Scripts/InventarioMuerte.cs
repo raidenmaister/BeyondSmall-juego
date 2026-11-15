@@ -76,7 +76,8 @@ public static class InventarioMuerte
             var ai = rh.GetComponent<CreatureAI>();
             if (ai != null && ai.kind == CreatureAI.Kind.Butterfly) continue;
             if (ai == null && rh.GetComponent<SpiderAI>() == null && rh.GetComponent<RatAI>() == null && rh.GetComponent<HormigaNido>() == null &&
-                rh.GetComponent<AbejaColmena>() == null && rh.GetComponent<ReinaHormiga>() == null && rh.GetComponent<ReinaAbeja>() == null) continue;
+                rh.GetComponent<AbejaColmena>() == null && rh.GetComponent<ReinaHormiga>() == null && rh.GetComponent<ReinaAbeja>() == null &&
+                rh.GetComponent<RataCloaca>() == null) continue;
             float d = Vector3.Distance(rh.transform.position, donde);
             if (d < 90f) cand.Add((rh, d));
         }
