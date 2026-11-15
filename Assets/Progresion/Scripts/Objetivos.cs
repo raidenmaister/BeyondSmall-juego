@@ -82,7 +82,7 @@ public class Objetivos : MonoBehaviour
             nombre = "Señal bajo tierra", lugar = MapaMundo.TipoLugar.Hormiguero,
             pista = "La señal viene de debajo de la tierra... de un hormiguero. La reina la guarda en su camara.",
             pos = () => new Vector3(h.x, ZonaJuego.Altura(h.x, h.y), h.y),
-            hecha = () => Recogida(bh),
+            hecha = () => Campana.Instancia != null ? Campana.Instancia.Hecho("ReinaHormiga") : Recogida(bh),
             consejo = () => Tiene("Escudo") || Mejoras.TieneGuantes ? null
                 : "Las hormigas atacan en grupo. Un <color=#ffd27a>Escudo</color> (Exoesqueleto o Borrador + Ligas) o unos <color=#ffd27a>Guantes</color> te ayudaran."
         });
@@ -93,7 +93,7 @@ public class Objetivos : MonoBehaviour
             nombre = "Señal en lo alto", lugar = MapaMundo.TipoLugar.Arbol,
             pista = "La señal zumba en lo alto de un arbol: una colmena. La antorcha calma a las abejas.",
             pos = () => new Vector3(a.x, ZonaJuego.Altura(a.x, a.y) + 6f, a.y),
-            hecha = () => Recogida(bc),
+            hecha = () => Campana.Instancia != null ? Campana.Instancia.Hecho("ReinaAbeja") : Recogida(bc),
             consejo = () => Tiene("Antorcha") ? null
                 : "Sin humo las abejas no perdonan. Crea una <color=#ffd27a>Antorcha</color> (Carbon + Palo) y enciendela con " + Controles.NombreTecla(Controles.Accion.Antorcha) + "."
         });
@@ -116,7 +116,7 @@ public class Objetivos : MonoBehaviour
             nombre = "Señal entre musica", lugar = MapaMundo.TipoLugar.Hamsterlandia,
             pista = "La señal suena a feria, en un rincon del salon. Alguien la tiene en su coleccion.",
             pos = () => hl != null ? new Vector3(hl.zona.center.x, 0f, hl.zona.max.z - 6f) : Vector3.zero,
-            hecha = () => Recogida(bb)
+            hecha = () => Campana.Instancia != null ? Campana.Instancia.Hecho("Bolita") : Recogida(bb)
         });
     }
 
@@ -134,7 +134,18 @@ public class Objetivos : MonoBehaviour
         {
             float d = Vector2.Distance(new Vector2(jugador.position.x, jugador.position.z), new Vector2(s.pos().x, s.pos().z));
             if (d > 110f) { s.avisado = false; continue; }
-            if (s.avisado || d > 55f || s.hecha() || s.consejo == null) continue;
+            if (s.avisado || d > 55f || s.hecha()) continue;
+            // Alva Majo: si no quieres que el jugador haga algo, dilo (o no le dejes): guarida que aun no toca
+            if (Campana.LugarSellado(s.lugar))
+            {
+                s.avisado = true;
+                var act = Campana.Instancia.Actual;
+                Aviso.Mostrar("<temblor>¡Aun no!</temblor>", new Color(1f, 0.55f, 0.35f), 2.5f);
+                SurvivalUI.Aviso("Este jefe es para mas adelante y no despertara. Ahora te toca: " + (act != null ? act.nombre : "otra mision") + " (mira la brujula)", new Color(1f, 0.85f, 0.6f));
+                brillo = 1f;
+                break;
+            }
+            if (s.consejo == null) continue;
             string c = s.consejo();
             s.avisado = true;
             if (c == null) continue;
@@ -149,7 +160,11 @@ public class Objetivos : MonoBehaviour
     public IEnumerable<Senal> Pendientes()
     {
         if (!Escaneado) yield break;
-        foreach (var s in senales) if (!s.hecha()) yield return s;
+        var c = Campana.Instancia;
+        if (c != null && c.fase != Campana.Fase.Historia) yield break;     // en el final solo cuenta la cabina
+        var lugar = c != null ? c.LugarActual : null;
+        foreach (var s in senales)
+            if (!s.hecha() && (lugar == null || s.lugar == lugar.Value)) yield return s;
     }
 
     public static bool LugarDescubierto(MapaMundo.TipoLugar t)
@@ -167,8 +182,8 @@ public class Objetivos : MonoBehaviour
         Escaneado = true;
         Juice.Sacudir(0.2f);
         Juice.Destello(new Color(0.3f, 1f, 0.55f, 0.35f), 0.9f);
-        Aviso.Mostrar("<ola>4 señales de energia</ola>", new Color(0.55f, 1f, 0.65f), 3.5f);
-        SurvivalUI.Aviso("Mira la brujula: cada señal es una bateria verde", new Color(0.7f, 1f, 0.75f));
+        Aviso.Mostrar("<ola>4 señales de energia</ola>\n<size=55%>Cuatro jefes las guardan. Iras de uno en uno, del mas debil al mas fuerte.</size>", new Color(0.55f, 1f, 0.65f), 4.5f);
+        SurvivalUI.Aviso("Mira la brujula: la señal verde es tu siguiente jefe", new Color(0.7f, 1f, 0.75f));
         if (Instancia != null) Instancia.brillo = 1f;
     }
 
@@ -186,6 +201,17 @@ public class Objetivos : MonoBehaviour
         {
             if (puestas == 0 && llevo == 0) { detalle = "Algo hizo ruido... la consola tiene una bahia de energia"; return "Investiga la cabina en la que despertaste"; }
             detalle = "Rastrea las demas en la bahia de la cabina";
+        }
+        var camp = Campana.Instancia;
+        if (camp != null && camp.fase == Campana.Fase.CuentaAtras)
+        {
+            detalle = "Curate, crea pociones (G) y armas. Cuando empiece, corre a la cabina sin pararte";
+            return "Preparate: la hecatombe empieza en " + Campana.Reloj(camp.Restante);
+        }
+        if (camp != null && camp.fase == Campana.Fase.Hecatombe)
+        {
+            detalle = "Todos los bichos te cortan el paso. ¡No te detengas! (sigue el icono de la cabina)";
+            return "¡HECATOMBE! Lleva la ultima pila a la cabina";
         }
         if (llevo > 0) { detalle = $"Baterias puestas: {puestas}/{MaquinaCrecimiento.Necesarias}"; return llevo == 1 ? "Lleva la bateria verde a la cabina" : $"Lleva las {llevo} baterias verdes a la cabina"; }
 
@@ -210,6 +236,9 @@ public class Objetivos : MonoBehaviour
             else if (hl.estado == Hamsterlandia.Estado.Persecucion) detalle = "¡Bolita te persigue! Su casita tiene la puerta chiquita: se atora";
             else if (hl.estado == Hamsterlandia.Estado.Huida) detalle = "¡Sal del parque con la pila!";
         }
+        var jefe = camp != null ? camp.Actual : null;
+        if (jefe != null && Escaneado)
+            return $"Jefe {camp.Indice + 1} de {camp.Orden.Count}: " + (jefe.tipo == "Bolita" ? "roba la pila a Bolita" : "derrota a " + jefe.nombre) + $"  ({puestas}/{MaquinaCrecimiento.Necesarias})";
         return $"Consigue baterias verdes  ({puestas}/{MaquinaCrecimiento.Necesarias})";
     }
 

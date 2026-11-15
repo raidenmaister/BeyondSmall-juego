@@ -612,6 +612,7 @@ public class RatAI : MonoBehaviour
         FindPlayerHealthIfNeeded();
         if (playerHealth != null)
         {
+            ModeloVivo.AtacarEn(this);
             playerHealth.TakeDamage(attackDamage);
         }
     }

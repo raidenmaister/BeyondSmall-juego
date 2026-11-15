@@ -467,6 +467,7 @@ public class RataCloaca : MonoBehaviour
             Vector3 hacia = jugador.position - transform.position; hacia.y = 0f;
             if (hacia.magnitude < alcance + 0.8f && Vector3.Angle(transform.forward, hacia) < 75f && vidaJugador != null)
             {
+                ModeloVivo.AtacarEn(this);
                 vidaJugador.TakeDamage(danio);
                 if (Random.value < 0.5f) Chillar(0.6f);
             }

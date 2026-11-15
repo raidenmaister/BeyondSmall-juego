@@ -12,6 +12,10 @@ public static class Refugios
     public static bool Elegir(Vector3 muerte, out Vector3 pos, out Quaternion rot, out string nombre)
     {
         pos = Vector3.zero; rot = Quaternion.identity; nombre = null;
+        // en el final: checkpoint en el camino, un poco por detras de lo mas lejos que llegaste
+        var c = Campana.Instancia;
+        if (c != null && (c.fase == Campana.Fase.CuentaAtras || c.fase == Campana.Fase.Hecatombe))
+            return c.PuntoReaparicionFinal(out pos, out rot, out nombre);
         var mapa = MapaMundo.Instancia;
         var maq = MaquinaCrecimiento.Instancia;
         if (mapa == null || maq == null) return false;

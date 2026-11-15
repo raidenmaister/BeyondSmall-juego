@@ -16,10 +16,12 @@ public class FotografoFinal : MonoBehaviour
     public static bool Trabajando { get; private set; }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    static void Reiniciar() { Trabajando = false; }
+    static void Reiniciar() { Trabajando = false; ModeloVivo.SiempreVisible = false; }
 
     Vector3 estudio;
     readonly List<GameObject> props = new List<GameObject>();
+    // bichos por recolocar cuando su modelo nuevo ya existe: (bicho, punto deseado de su base)
+    readonly List<(GameObject g, Vector3 p)> asentar = new List<(GameObject, Vector3)>();
     const int CapaRetrato = 31;
 
     public static void Tomar()
@@ -33,7 +35,7 @@ public class FotografoFinal : MonoBehaviour
     // ================================================================== trabajo
     IEnumerator Trabajo()
     {
-        Trabajando = true;
+        Trabajando = true; ModeloVivo.SiempreVisible = true;
         Directory.CreateDirectory(Carpeta + "Fotos"); Directory.CreateDirectory(Carpeta + "Retratos");
         var dn = DayNightCycle.Instance;
         float hora = dn != null ? dn.hora : 12f; bool pausa = dn != null && dn.pausado;
@@ -48,6 +50,10 @@ public class FotografoFinal : MonoBehaviour
         var escritorio = GameObject.Find("class/desk");
         if (escritorio != null) { var b = escritorio.GetComponent<Renderer>().bounds; estudio = new Vector3(b.center.x, b.max.y + 0.01f, b.center.z - 1.5f); }
         else { estudio = new Vector3(150f, 0f, -330f); estudio.y = ZonaJuego.Altura(estudio.x, estudio.z); }
+        // la mesa del estudio como suelo fisico (los modelos nuevos se apoyan con un rayo hacia abajo)
+        var mesaFisica = new GameObject("MesaEstudio").AddComponent<BoxCollider>();
+        mesaFisica.size = new Vector3(40f, 0.2f, 40f);
+        mesaFisica.transform.position = estudio + Vector3.down * 0.11f;
         // luces de estudio (calida de frente, fria de relleno)
         var luces = new List<GameObject>();
         foreach (var (pos, col, inten) in new[] { (new Vector3(-6f, 10f, -9f), new Color(1f, 0.9f, 0.75f), 70f), (new Vector3(8f, 6f, 4f), new Color(0.7f, 0.8f, 1f), 30f) })
@@ -61,10 +67,11 @@ public class FotografoFinal : MonoBehaviour
         foreach (var paso in Retratos()) { yield return paso; }
 
         foreach (var l in luces) Destroy(l);
+        Destroy(mesaFisica.gameObject);
         foreach (var r in ocultos) if (r != null) r.enabled = true;
         QualitySettings.lodBias = bias; RenderSettings.fog = niebla;
         if (dn != null) { dn.hora = hora; dn.pausado = pausa; dn.AplicarAhora(); }
-        Trabajando = false;
+        Trabajando = false; ModeloVivo.SiempreVisible = false;
 #if UNITY_EDITOR
         UnityEditor.AssetDatabase.Refresh();
 #endif
@@ -76,8 +83,15 @@ public class FotografoFinal : MonoBehaviour
     {
         // 1. la abeja ladrona: se lleva tu mochila y las hormigas la miran
         var abeja = Prop("Abeja", new Vector3(0.3f, 2.4f, 0f), 90f);
-        Accesorio(Mochila.Modelo(null, 0.75f), new Vector3(0.45f, 1.45f, 0.05f), 20f, new Vector3(0, 0, 18));
         var h1 = Prop("Hormiga", new Vector3(-2.3f, 0f, 0.4f), 80f, cv => cv.pitch = 28f);
+        yield return Asentar();
+        var mochila = Accesorio(Mochila.Modelo(null, 0.75f), new Vector3(0.45f, 1.45f, 0.05f), 20f, new Vector3(0, 0, 18));
+        if (abeja != null && mochila != null)
+        {
+            // colgando de las patas de la abeja (la parte de arriba de la mochila justo bajo su barriga)
+            var ba = Limites(abeja); var bm = Limites(mochila);
+            mochila.transform.position += new Vector3(ba.center.x - bm.center.x, ba.min.y + 0.35f - bm.max.y, ba.center.z - bm.center.z);
+        }
         yield return Foto("01_Ladrona", 0f, 8f);
 
         // 2. siesta sobre un carbon
@@ -85,8 +99,8 @@ public class FotografoFinal : MonoBehaviour
         Prop("Oruga", new Vector3(-0.2f, 0.5f, 0.1f), 25f, cv => cv.move = 0f);
         yield return Foto("02_Siesta", 30f, 22f);
 
-        // 3. futbol: hormigas contra la cochinilla hecha bola
-        Prop("Cochinilla", new Vector3(0f, 0f, 0f), 0f, cv => { cv.curl = 1f; cv.spin = 40f; });
+        // 3. futbol: dos hormigas se disputan una piedrita (la cochinilla de verdad no se hace bola en la foto)
+        Accesorio(Piedrita(), new Vector3(0f, 0f, 0.2f), 30f, Vector3.zero);
         Prop("Hormiga", new Vector3(-2.2f, 0f, 0.2f), 90f, cv => cv.move = 1f);
         Prop("Hormiga", new Vector3(2.4f, 0f, 0.6f), -100f, cv => cv.move = 0.6f);
         yield return Foto("03_Futbol", 0f, 18f);
@@ -95,9 +109,10 @@ public class FotografoFinal : MonoBehaviour
         var reina = Prop("ReinaHormiga", Vector3.zero, 160f);
         if (reina != null)
         {
+            yield return Asentar();                      // la reina ya con su modelo, para saber donde tiene la cabeza
             var b = Limites(reina);
-            Vector3 cabeza = reina.transform.position + reina.transform.forward * b.extents.z * 0.75f;
-            cabeza.y = b.max.y + 0.2f;
+            Vector3 cabeza = Cabeza(reina);
+            cabeza.y = Mathf.Max(cabeza.y, b.min.y + b.size.y * 0.6f) + 0.15f;
             Prop("Mariposa", Quaternion.Euler(0f, 180f, 0f) * (cabeza - estudio), 160f);   // deshace el giro de Colocar
         }
         yield return Foto("04_Corona", 25f, 14f);
@@ -105,33 +120,51 @@ public class FotografoFinal : MonoBehaviour
         // 5. la araña con una antorcha
         Prop("Arana", Vector3.zero, 0f);
         var antorcha = Antorcha();
-        if (antorcha != null) Accesorio(antorcha, new Vector3(0.9f, 0f, 0.5f), 0f, new Vector3(0, 0, 8), 0.42f);
+        if (antorcha != null) Accesorio(antorcha, new Vector3(2.7f, 0f, 1.3f), 0f, new Vector3(0, 0, 8), 0.42f);   // fuera del alcance de las patas
         yield return Foto("05_Antorcha", -25f, 12f);
 
         // 6. carrera: el ciempies persigue al escarabajo
-        Prop("Escarabajo", new Vector3(1.7f, 0f, 0f), 90f, cv => cv.move = 1f);
-        Prop("Ciempies", new Vector3(-2.2f, 0f, 0.3f), 90f, cv => cv.move = 1f);
+        Prop("Escarabajo", new Vector3(2.3f, 0f, 0f), 90f, cv => cv.move = 1f);
+        Prop("Ciempies", new Vector3(-2.9f, 0f, 0.3f), 90f, cv => cv.move = 1f);
         yield return Foto("06_Carrera", 0f, 14f);
 
         // 7. banquete de hormigas
         var carne = Resources.Load<GameObject>("Drops/Carne");
         if (carne != null) Accesorio(Copia(carne), new Vector3(0f, 0.15f, 0f), 30f, Vector3.zero, 1.8f);
         var hueso = Resources.Load<GameObject>("Drops/Hueso");
-        if (hueso != null) Accesorio(Copia(hueso), new Vector3(1.3f, 0.1f, 1.0f), 70f, Vector3.zero, 1.4f);
+        if (hueso != null) Accesorio(Copia(hueso), new Vector3(2.2f, 0.1f, 1.5f), 70f, Vector3.zero, 1.4f);
         Prop("Hormiga", new Vector3(-2.1f, 0f, 0.1f), 95f);
         Prop("Hormiga", new Vector3(1.9f, 0f, -1.2f), -55f);
         yield return Foto("07_Banquete", 20f, 32f);
 
         // 8. la lombriz duerme dentro de una liga como si fuera su cama
-        Accesorio(Copia(BuscarPrefijo("black_generic_hair_tie")), new Vector3(0f, 0.05f, 0f), 0f, Vector3.zero, 1.6f);
-        Prop("Lombriz", new Vector3(0f, 0.08f, 0f), 30f, cv => { cv.pitch = 0f; cv.sink = 0f; cv.move = 0.15f; });
+        var liga = Accesorio(Copia(BuscarPrefijo("black_generic_hair_tie")), new Vector3(0f, 0.05f, 0f), 0f, new Vector3(90f, 0f, 0f), 6.4f);   // tumbada: es su cama (la lombriz cabe entera)
+        var lombriz = Prop("Lombriz", new Vector3(0f, 0.08f, 0f), 30f, cv => { cv.pitch = 0f; cv.sink = 0f; cv.move = 0.15f; });
+        yield return Asentar();
+        if (liga != null && lombriz != null)
+        {
+            // la lombriz en el centro del aro (la caja de la liga copiada incluye el brillo de objeto y no esta centrada)
+            MeshRenderer aro = null;
+            foreach (var mr in liga.GetComponentsInChildren<MeshRenderer>()) if (aro == null || mr.bounds.size.sqrMagnitude > aro.bounds.size.sqrMagnitude) aro = mr;
+            if (aro != null)
+            {
+                // el aro apoyado en la mesa por su propia malla (la caja de la copia incluye el brillo de objeto)
+                liga.transform.position += Vector3.up * (estudio.y + 0.005f - aro.bounds.min.y);
+                // centro del aro: la media de sus vertices; centro de la lombriz: la media de los de su malla visible
+                Vector3 ca = Centroide(aro), cl = Vector3.zero; int n = 0;
+                foreach (var mr in lombriz.GetComponentsInChildren<MeshRenderer>()) if (!mr.forceRenderingOff) { cl += Centroide(mr); n++; }
+                if (n > 0) { cl /= n; lombriz.transform.position += new Vector3(ca.x - cl.x, 0f, ca.z - cl.z); }
+                Debug.Log("[FotografoFinal] aro " + ca.ToString("F2") + " lombriz " + cl.ToString("F2"));
+            }
+        }
         yield return Foto("08_HulaHoop", 15f, 25f);
 
         // 9. la reina abeja en su trono (la bateria verde)
-        var bat = Buscar("BATERIA_Colmena") ?? Buscar("BATERIA_Hormiguero");
-        GameObject trono = bat != null ? Accesorio(Copia(bat), Vector3.zero, 0f, Vector3.zero, 2.6f) : null;
+        // la bateria verde (la de la escena solo existe cuando cae del jefe: se usa la del prefab)
+        var bat = Resources.Load<GameObject>("Drops/Bateria");
+        GameObject trono = bat != null ? Accesorio(Copia(bat), Vector3.zero, 0f, Vector3.zero, 4.5f) : null;
         float alto = trono != null ? Limites(trono).max.y - estudio.y : 3f;
-        Prop("ReinaAbeja", new Vector3(0f, alto - 0.3f, 0f), 200f);
+        Prop("ReinaAbeja", new Vector3(0f, alto - 0.35f, 0f), 200f);   // sentada: las patas sobre la tapa
         yield return Foto("09_Trono", 20f, 10f);
 
         // 10. la cochinilla se esconde entre carbones
@@ -139,9 +172,9 @@ public class FotografoFinal : MonoBehaviour
         for (int i = 0; i < 4; i++)
         {
             float a = i * 90f * Mathf.Deg2Rad + 0.4f;
-            Accesorio(Copia(carbon), new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a)) * 1.3f, i * 50f, Vector3.zero, 1.5f + 0.2f * i);
+            Accesorio(Copia(carbon), new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a)) * 2.3f, i * 50f, Vector3.zero, 1.7f + 0.2f * i);
         }
-        Prop("Cochinilla", Vector3.zero, 30f, cv => cv.curl = 1f);
+        Prop("Cochinilla", new Vector3(0f, 0f, 0.3f), 30f, cv => cv.move = 0.25f);
         yield return Foto("10_Escondite", 10f, 35f);
     }
 
@@ -161,15 +194,64 @@ public class FotografoFinal : MonoBehaviour
 
     IEnumerator Foto(string nombre, float azimut, float elevacion)
     {
-        // dejar que corran unos cuadros de animacion
-        for (int i = 0; i < 4; i++) yield return null;
+        // dejar que corran unos cuadros de animacion y que se creen los modelos nuevos
+        yield return Asentar();
+        for (int i = 0; i < 2; i++) yield return null;
         Render(Carpeta + "Fotos/" + nombre + ".png", 1024, 768, azimut, elevacion, false);
         Limpiar();
         yield return null;
     }
 
+    /// <summary>
+    /// Los bichos se colocan midiendo su modelo viejo (invisible); el nuevo (ModeloVivo) aparece unos cuadros despues y
+    /// puede no coincidir del todo: aqui cada uno se recoloca con su modelo visible, centrado y apoyado en su punto.
+    /// </summary>
+    IEnumerator Asentar()
+    {
+        for (int i = 0; i < 3; i++) yield return null;
+        foreach (var (g, p) in asentar)
+        {
+            if (g == null) continue;
+            var b = Limites(g);
+            g.transform.position += new Vector3(p.x - b.center.x, p.y - b.min.y, p.z - b.center.z);
+            foreach (var mv in g.GetComponentsInChildren<ModeloVivo>()) mv.ReApoyar();   // las patas, sobre la mesa
+        }
+        asentar.Clear();
+        for (int i = 0; i < 3; i++) yield return null;
+    }
+
+    /// <summary>La cabeza del modelo nuevo de un bicho (hueso "head"), o la punta delantera de su caja.</summary>
+    Vector3 Cabeza(GameObject g)
+    {
+        foreach (var mv in g.GetComponentsInChildren<ModeloVivo>())
+            foreach (var t in mv.GetComponentsInChildren<Transform>())
+                if (t.name.ToLower().Contains("head")) return t.position;
+        var b = Limites(g);
+        return b.center + g.transform.forward * b.extents.magnitude * 0.6f;
+    }
+
     // ================================================================== props
     GameObject Buscar(string n) { var g = GameObject.Find(n); return g; }
+
+    /// <summary>Una piedra pequeña del exterior (la misma malla y material que las del jardin) para usar de balon.</summary>
+    GameObject Piedrita()
+    {
+        var veg = FindAnyObjectByType<VegetacionExterior>();
+        if (veg == null || veg.prototipos == null) return null;
+        foreach (var p in veg.prototipos)
+        {
+            if (p == null || p.nombre != "Piedra" || p.variantes == null || p.variantes.Length == 0 || p.variantes[0].lod0 == null) continue;
+            var go = new GameObject("Piedrita");
+            go.AddComponent<MeshFilter>().sharedMesh = p.variantes[0].lod0;
+            go.AddComponent<MeshRenderer>().sharedMaterials = p.materiales;
+            var b = p.variantes[0].lod0.bounds;
+            go.transform.localScale = Vector3.one * (1.1f / Mathf.Max(b.size.x, b.size.y, b.size.z, 0.001f));   // 1,1 de ancho
+            go.SetActive(false);
+            props.Add(go);
+            return go;
+        }
+        return null;
+    }
 
     GameObject BuscarPrefijo(string p)
     {
@@ -189,10 +271,17 @@ public class FotografoFinal : MonoBehaviour
         foreach (var cv in c.GetComponentsInChildren<CreatureVisual>(true)) { cv.sink = 0f; cv.curl = 0f; cv.roll = 0f; cv.lunge = 0f; }
         Colocar(c, local, rotY, Vector3.zero, 1f);
         if (pose != null) foreach (var cv in c.GetComponentsInChildren<CreatureVisual>(true)) pose(cv);
+        // el modelo descargado (ModeloVivo) posa andando o corriendo segun el "move" de la pose
+        foreach (var mv in c.GetComponentsInChildren<ModeloVivo>(true))
+        {
+            var cv = mv.GetComponent<CreatureVisual>() ?? c.GetComponentInChildren<CreatureVisual>(true);
+            mv.paseoForzado = cv != null ? Mathf.Clamp01(cv.move) : 0f;
+        }
         // local.y = altura de la parte de abajo del bicho (algunos modelos estan desplazados de su origen)
         var b = Limites(c);
         float yDeseado = estudio.y + local.y;
         c.transform.position += Vector3.up * (yDeseado - b.min.y);
+        asentar.Add((c, estudio + Quaternion.Euler(0f, 180f, 0f) * local));
         return c;
     }
 
@@ -203,8 +292,8 @@ public class FotografoFinal : MonoBehaviour
         original.SetActive(false);
         var c = Instantiate(original);
         original.SetActive(act);
-        foreach (var mb in c.GetComponentsInChildren<MonoBehaviour>(true)) if (!(mb is CreatureVisual)) mb.enabled = false;
-        foreach (var col in c.GetComponentsInChildren<Collider>(true)) col.enabled = false;
+        foreach (var mb in c.GetComponentsInChildren<MonoBehaviour>(true)) if (!(mb is CreatureVisual) && !(mb is ModeloVivo)) mb.enabled = false;   // el modelo nuevo se rehace en la copia
+        // los colliders se dejan: los modelos nuevos se apoyan sobre los objetos (la oruga sobre el carbon), y en el estudio nada choca
         foreach (var ag in c.GetComponentsInChildren<NavMeshAgent>(true)) ag.enabled = false;
         foreach (var rb in c.GetComponentsInChildren<Rigidbody>(true)) rb.isKinematic = true;
         foreach (var ps in c.GetComponentsInChildren<ParticleSystem>(true)) ps.Stop();
@@ -249,13 +338,43 @@ public class FotografoFinal : MonoBehaviour
     {
         foreach (var p in props) if (p != null) Destroy(p);
         props.Clear();
+        asentar.Clear();
+    }
+
+    static Vector3 Centroide(MeshRenderer r)
+    {
+        var mf = r.GetComponent<MeshFilter>();
+        if (mf == null || mf.sharedMesh == null || !mf.sharedMesh.isReadable) return r.bounds.center;
+        var v = mf.sharedMesh.vertices; Vector3 s = Vector3.zero;
+        foreach (var p in v) s += r.transform.TransformPoint(p);
+        return v.Length > 0 ? s / v.Length : r.bounds.center;
+    }
+
+    static Mesh horneada;
+    static Bounds Horneada(SkinnedMeshRenderer smr)
+    {
+        if (horneada == null) horneada = new Mesh();
+        smr.BakeMesh(horneada, true);
+        var v = horneada.vertices;
+        if (v.Length == 0) return smr.bounds;
+        var tr = smr.transform;
+        var b = new Bounds(tr.TransformPoint(v[0]), Vector3.zero);
+        for (int i = 1; i < v.Length; i += 2) b.Encapsulate(tr.TransformPoint(v[i]));
+        return b;
     }
 
     static Bounds Limites(GameObject g)
     {
         var rs = g.GetComponentsInChildren<Renderer>();
         Bounds b = new Bounds(g.transform.position, Vector3.one * 0.5f); bool hay = false;
-        foreach (var r in rs) { if (r is ParticleSystemRenderer) continue; if (!hay) { b = r.bounds; hay = true; } else b.Encapsulate(r.bounds); }
+        // primero solo lo que se dibuja (el modelo viejo de los bichos queda invisible bajo el nuevo, ver ModeloVivo)
+        foreach (var r in rs)
+        {
+            if (r is ParticleSystemRenderer || r.forceRenderingOff) continue;
+            var rb = r is SkinnedMeshRenderer smr ? Horneada(smr) : r.bounds;   // la caja de las mallas animadas va holgada: se mide la pose real
+            if (!hay) { b = rb; hay = true; } else b.Encapsulate(rb);
+        }
+        if (!hay) foreach (var r in rs) { if (r is ParticleSystemRenderer) continue; if (!hay) { b = r.bounds; hay = true; } else b.Encapsulate(r.bounds); }
         return b;
     }
 

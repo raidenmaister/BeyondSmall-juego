@@ -61,6 +61,10 @@ public static class Catalogo
         I("Botas", "Botas de ciempies", Tipo.Mejora, "Saltas un 35% mas alto.", "Crea: pata de ciempies + piel");
         I("Planeador", "Planeador", Tipo.Mejora, "Manten SALTAR en el aire para planear.", "Crea: alas + hueso");
         I("Peto", "Peto de cuerno", Tipo.Mejora, "Tu vida maxima sube un 50%.", "Crea: cuerno + exoesqueleto");
+        I("Tapon", "Tapon de botella", Tipo.Material, "Un frasquito perfecto para pociones.", "Por el suelo del salon");
+        // ---- pociones (ver Pociones.cs)
+        foreach (var p in Pociones.Todas)
+            I(p.id, p.nombre, Tipo.Curacion, p.efecto + " (tecla G).", "Crea: tapon + " + p.ingrediente.Replace("_", " ").ToLower());
         // ---- armas (ver Armas.cs)
         foreach (var a in Armas.Todas)
             I(a.id, a.nombre, Tipo.Arma, a.descripcion, "Crea: " + a.receta);

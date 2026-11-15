@@ -46,6 +46,8 @@ public class Logros : MonoBehaviour
 
     static int Tiene(string id) => ControladorInventario.Instance != null ? ControladorInventario.Instance.GetTotalCount(id) : 0;
     static bool JefeMuerto(string tipo) => E.Bichos(tipo) > 0;
+    static bool JefeHecho(string tipo) => Campana.Instancia != null ? Campana.Instancia.Hecho(tipo) : JefeMuerto(tipo);
+    static bool Cumplida(string id) => E.misiones.Contains(id);
 
     // ------------------------------------------------------------------ definiciones
     static void Definir()
@@ -63,45 +65,50 @@ public class Logros : MonoBehaviour
             id = "armas", titulo = "Arma improvisada", descripcion = "Ahi fuera los bichos son enormes. Fusiona dos objetos para crear tu primera arma.",
             pista = "Abre el inventario (I) y mira el libro de RECETAS: lapiz + navaja = lanza, palo + tuerca = martillo...",
             hecha = () => { foreach (var a in Armas.Todas) if (Creado(a.id) || Tiene(a.id) > 0) return true; return false; },
-            disponible = () => Objetivos.Escaneado, recompensa = new[] { ("Venda", 2) }
+            disponible = () => Objetivos.Escaneado, recompensa = new[] { ("Venda", 2), ("Tapon", 2) }
         });
         Misiones.Add(new Mision
         {
-            id = "reinaHormiga", titulo = "La reina de la tierra", descripcion = "Una bateria esta en la camara de la Reina Hormiga, bajo el jardin. Derrotala.",
-            pista = "Entrada del hormiguero: sigue la señal \"bajo tierra\" de la brujula. Lleva escudo o un mazo para los grupos.",
-            hecha = () => JefeMuerto("ReinaHormiga"), disponible = () => Objetivos.Escaneado,
-            progreso = () => "Bateria: " + (Recogida("BATERIA_Hormiguero") ? "conseguida" : "en su camara"),
-            recompensa = new[] { ("Carne_Cocinada", 3), ("Venda", 1) }
+            id = "bolita", titulo = "Jefe 1: La funcion de Bolita", descripcion = "En Hamsterlandia, Bolita guarda una pila en su coleccion. Robasela y escapa.",
+            pista = "Enciende las tres palancas del parque y luego la del escenario. Su casita tiene la puerta chiquita: ahi se atora.",
+            hecha = () => Campana.Instancia != null ? Campana.Instancia.Hecho("Bolita") : E.escapesBolita > 0,
+            disponible = () => Objetivos.Escaneado,
+            recompensa = new[] { ("PocionFuerza", 1), ("PocionVida", 1), ("Venda", 1) }
         });
         Misiones.Add(new Mision
         {
-            id = "reinaAbeja", titulo = "El enjambre", descripcion = "La Reina Abeja guarda otra bateria en lo alto del arbol. Acaba con ella.",
-            pista = "Sube al arbol de la colmena con la antorcha encendida (T): el humo calma a las abejas.",
-            hecha = () => JefeMuerto("ReinaAbeja") || (Colmena.Instancia != null && Colmena.Instancia.ReinaMuerta), disponible = () => Objetivos.Escaneado,
-            progreso = () => "Bateria: " + (Recogida("BATERIA_Colmena") ? "conseguida" : "en la cupula de cera"),
-            recompensa = new[] { ("Carne_Cocinada", 3), ("Venda", 1) }
+            id = "reinaAbeja", titulo = "Jefe 2: El enjambre", descripcion = "La Reina Abeja (1200 de vida) guarda la siguiente pila en lo alto del arbol.",
+            pista = "Sube al arbol de la colmena con la antorcha encendida (T): el humo calma a las abejas. Una lanza llega a la reina cuando baja en picado.",
+            hecha = () => JefeHecho("ReinaAbeja"), disponible = () => Cumplida("bolita"),
+            recompensa = new[] { ("PocionVida", 2), ("PocionCaparazon", 1) }
         });
         Misiones.Add(new Mision
         {
-            id = "reyRata", titulo = "El rey de la cloaca", descripcion = "El Rey Rata se trago una bateria. Bajo la alcantarilla te espera su trono.",
-            pista = "Entra por la alcantarilla del jardin. No bebas el agua sucia y salta su coletazo.",
-            hecha = () => JefeMuerto("ReyRata"), disponible = () => Objetivos.Escaneado,
-            recompensa = new[] { ("Carne_Cocinada", 3), ("Venda", 2) }
+            id = "reinaHormiga", titulo = "Jefe 3: La reina de la tierra", descripcion = "La Reina Hormiga (2000 de vida) espera en su camara, bajo el jardin. Es mas fuerte que la abeja: mejora tus armas.",
+            pista = "Entra por el hormiguero. El mazo de chinchetas golpea a todos los soldados a la vez; bebe una pocion de fuerza (G) antes de la reina.",
+            hecha = () => JefeHecho("ReinaHormiga"), disponible = () => Cumplida("reinaAbeja"),
+            recompensa = new[] { ("PocionFuerza", 2), ("PocionRapidez", 1), ("PocionVida", 1) }
         });
         Misiones.Add(new Mision
         {
-            id = "bolita", titulo = "La funcion de Bolita", descripcion = "En Hamsterlandia, Bolita guarda la ultima pila en su coleccion. Robasela y escapa.",
-            pista = "Enciende las tres palancas del parque y luego la del escenario. Su casita tiene la puerta chiquita.",
-            hecha = () => E.escapesBolita > 0 || Recogida("BATERIA_Bolita"), disponible = () => Objetivos.Escaneado,
-            recompensa = new[] { ("Carne_Cocinada", 2), ("Venda", 2) }
+            id = "reyRata", titulo = "Jefe 4: El rey de la cloaca", descripcion = "El Rey Rata (2800 de vida), el jefe final, se trago la ultima pila. Su trono esta en lo mas hondo y lejano de la cloaca.",
+            pista = "Entra por la alcantarilla del jardin. No dejes que coma de sus montones de comida (se cura) y salta su coletazo. Lleva pociones.",
+            hecha = () => JefeHecho("ReyRata"), disponible = () => Cumplida("reinaHormiga"),
+            recompensa = new[] { ("PocionVida", 3), ("PocionCaparazon", 2), ("Venda", 2) }
         });
         Misiones.Add(new Mision
         {
-            id = "final", titulo = "Volver a crecer", descripcion = "Pon las cuatro baterias verdes en la cabina y entra.", final = true,
-            pista = "Lleva cada bateria a la bahia de la consola (E). Con las cuatro, entra en la cabina.",
-            hecha = () => FinalJuego.Activo || E.completadaFinal,
-            progreso = () => "Baterias puestas: " + (MaquinaCrecimiento.Instancia != null ? MaquinaCrecimiento.Instancia.Colocadas : 0) + "/" + MaquinaCrecimiento.Necesarias,
-            disponible = () => Objetivos.Escaneado
+            id = "final", titulo = "La hecatombe", descripcion = "Todos los bichos han sentido la ultima pila. Sobrevive a la hecatombe y llevala hasta la cabina.", final = true,
+            pista = "Preparate durante la cuenta atras. Cuando empiece, corre hacia la cabina sin pararte: los bichos te cortaran el paso.",
+            hecha = () => FinalJuego.Activo || E.completadaFinal || E.faseFinal >= 3,
+            progreso = () =>
+            {
+                var c = Campana.Instancia;
+                if (c != null && c.fase == Campana.Fase.CuentaAtras) return "Los bichos vendran en " + Campana.Reloj(c.Restante);
+                if (c != null && c.fase == Campana.Fase.Hecatombe) return "¡HECATOMBE! Llega a la cabina";
+                return "Baterias puestas: " + (MaquinaCrecimiento.Instancia != null ? MaquinaCrecimiento.Instancia.Colocadas : 0) + "/" + MaquinaCrecimiento.Necesarias;
+            },
+            disponible = () => Cumplida("reyRata")
         });
 
         // ---- logros
@@ -134,6 +141,8 @@ public class Logros : MonoBehaviour
         L("cartografo", "Cartografo", "Descubre todos los lugares del mapa.", null, () => LugaresDescubiertos(), System.Enum.GetValues(typeof(MapaMundo.TipoLugar)).Length);
         L("dias", "Superviviente", "Sobrevive 10 dias.", null, () => E.dias, 10);
         L("coleccion", "Pistola de Chejov", "Recoge al menos uno de cada material del juego.", null, () => E.materiales.Count, MaterialesTotales());
+        L("alquimista", "Alquimista", "Bebe 10 pociones.", "PocionVida", () => Contador("pociones"), 10);
+        L("hecatombe", "Superviviente de la hecatombe", "Llega a la cabina en plena hecatombe.", "Bateria", () => Contador("hecatombe"), 1);
         L("sinMorir", "Intocable", "Termina el juego sin morir ni una vez.", null, () => (E.completadaFinal || FinalJuego.Activo) && E.muertes == 0 ? 1 : 0, 1, true);
     }
 

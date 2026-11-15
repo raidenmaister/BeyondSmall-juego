@@ -31,8 +31,8 @@ Material:
     m_Floats:
     - _AlphaClip: 0
     - _Cutoff: 0.45
-    - _FadeFin: 4
-    - _FadeInicio: 1.2
+    - _FadeFin: 2.2
+    - _FadeInicio: 0.7
     - _Translucidez: 0.1
     - _VariacionColor: 0.15
     - _VelocidadViento: 1.2

@@ -1,0 +1,17 @@
+Modelos 3D de Sketchfab con licencia Creative Commons Atribucion 4.0 (CC BY 4.0).
+https://creativecommons.org/licenses/by/4.0/
+Se usan escalados, recoloreados por la luz del juego y animados con sus propios clips (ModeloVivo.cs).
+
+hormigas del jardin y del hormiguero: "ANT" por MAXDESIGN - https://sketchfab.com/3d-models/ant-dab7080251674ef98fc83b7604be2ffc
+Reina Hormiga: "Game-Ready Queen ant Model" por LilCick - https://sketchfab.com/3d-models/game-ready-queen-ant-model-b04b636a35e14b38bfb05bd21931549d
+abejas y Reina Abeja: "Bee" por hellonintendo8 - https://sketchfab.com/3d-models/bee-d4683f98637745f1a989bb013215c8de
+ratas, ratas de la cloaca y Rey Rata: "Black Rat ( Free download )" por Nestaeric - https://sketchfab.com/3d-models/black-rat-free-download-3db3acb4140d4de8bd62a171212bad9c
+escarabajo rinoceronte: "A Rhino beetle" por aaadragon - https://sketchfab.com/3d-models/a-rhino-beetle-83b3e7f2c3d84678a06d68d360efac50
+oruga: "Horned Devil Caterpillar Alternative Style" por chaitanyak - https://sketchfab.com/3d-models/horned-devil-caterpillar-alternative-style-febdbce61b45472da3de7d9a9878ef7a
+mariposa: "BUTTERFLY" por rukh3d - https://sketchfab.com/3d-models/butterfly-d642db74a3fa491a8143bd088b408094
+ciempies: "Centipede" por dartuchiwa - https://sketchfab.com/3d-models/centipede-eb3962d829804743b1b48545a323b667
+araña: "Animated Spider" por shadocks - https://sketchfab.com/3d-models/animated-spider-af87017501fc44e39a33c220f2435100
+cochinilla: "Woodlouse" por .hapto - https://sketchfab.com/3d-models/woodlouse-fae04aa296f844c18675f6ae50aefe77
+Bolita, el hamster de Hamsterlandia: "Hamster Walk" por Lada.Repina - https://sketchfab.com/3d-models/hamster-walk-041ff593cec544c19a2a37cc38c06194
+lombrices: "Earth_ Worm" por mj.artsi - https://sketchfab.com/3d-models/earth--worm-63ad4a2dfed44f209bc7b174f5d0cb84 (sin animacion: ondula por codigo)
+larvas de la colmena: "Larva" por malle87 - https://sketchfab.com/3d-models/larva-14877198919544f5b43cef3e86e7b89f

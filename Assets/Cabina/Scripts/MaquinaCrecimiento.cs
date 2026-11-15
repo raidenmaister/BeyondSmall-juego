@@ -118,6 +118,12 @@ public class MaquinaCrecimiento : MonoBehaviour
             {
                 int tengo = inv != null ? inv.GetTotalCount(ItemBateria) : 0;
                 string tecla = Controles.NombreTecla(Controles.Accion.Interactuar);
+                string motivo;
+                if (tengo > 0 && !Campana.PuedeColocar(colocadas, out motivo))
+                {
+                    SurvivalUI.Indicacion(this, motivo);    // la ultima pila: primero la hecatombe
+                    return;
+                }
                 if (tengo > 0)
                 {
                     SurvivalUI.Indicacion(this, $"[{tecla}] Colocar bateria verde   ({colocadas}/{Necesarias})");

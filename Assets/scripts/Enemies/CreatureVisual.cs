@@ -127,7 +127,11 @@ public class CreatureVisual : MonoBehaviour
     }
 
     // ------------------------------------------------------------------ API para la IA
-    public void Attack(float duration = 0.4f) { attackT = 1f; attackLen = Mathf.Max(0.05f, duration); }
+    public void Attack(float duration = 0.4f)
+    {
+        attackT = 1f; attackLen = Mathf.Max(0.05f, duration);
+        var mv = GetComponent<ModeloVivo>(); if (mv != null) mv.Atacar();   // el modelo descargado tambien muerde
+    }
 
     public void Play(string state)
     {

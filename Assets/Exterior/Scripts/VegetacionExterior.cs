@@ -245,6 +245,19 @@ public class VegetacionExterior : MonoBehaviour
                 if (p.alinearAlSuelo) rot = Quaternion.FromToRotation(Vector3.up, NormalSuelo(x, z)) * rot;
                 var pos = new Vector3(x, y, z);
                 var m4 = Matrix4x4.TRS(pos, rot, Vector3.one * s);
+                // los solidos (rocas, tocones, troncos, abetos) se apoyan con TODA la base: en pendiente se hundian solo
+                // por el centro y un lado (raices, punta del tronco) quedaba flotando
+                if (p.exclusion > 0f)
+                {
+                    float flota = MaximoFlotando(g.lod0, m4);
+                    if (flota > 0.03f)
+                    {
+                        float bajar = flota - 0.03f, tope = mb.size.y * s * 0.45f;
+                        if (bajar > tope) continue;          // ladera demasiado empinada para este objeto
+                        pos.y -= bajar;
+                        m4 = Matrix4x4.TRS(pos, rot, Vector3.one * s);
+                    }
+                }
 
                 if (p.exclusion > 0f) AgregarSolido(x, z, radio * p.exclusion);
                 if (p.colision != Colision.Ninguna && colisiones != null) CrearColision(p, g.lod0, pos, rot, s);
@@ -351,6 +364,44 @@ public class VegetacionExterior : MonoBehaviour
                 }
             }
         return false;
+    }
+
+    // vertices de la "suela" de cada malla (los de la franja mas baja), muestreados: se calculan una vez
+    static readonly Dictionary<Mesh, Vector3[]> suelas = new Dictionary<Mesh, Vector3[]>();
+
+    static Vector3[] Suela(Mesh m)
+    {
+        if (suelas.TryGetValue(m, out var s)) return s;
+        var lista = new List<Vector3>();
+        if (m.isReadable)
+        {
+            var v = m.vertices;
+            float minY = m.bounds.min.y, franja = Mathf.Max(m.bounds.size.y * 0.1f, 0.001f);
+            foreach (var p in v) if (p.y < minY + franja) lista.Add(p);
+            // como mucho 48 puntos repartidos
+            if (lista.Count > 48) { var sub = new List<Vector3>(48); float paso = lista.Count / 48f; for (int i = 0; i < 48; i++) sub.Add(lista[(int)(i * paso)]); lista = sub; }
+        }
+        else
+        {
+            var b = m.bounds;   // malla no legible: las esquinas de abajo de su caja
+            lista.Add(new Vector3(b.min.x, b.min.y, b.min.z)); lista.Add(new Vector3(b.max.x, b.min.y, b.min.z));
+            lista.Add(new Vector3(b.min.x, b.min.y, b.max.z)); lista.Add(new Vector3(b.max.x, b.min.y, b.max.z));
+        }
+        s = lista.ToArray();
+        suelas[m] = s;
+        return s;
+    }
+
+    /// <summary>Lo que mas sobresale por encima del suelo de la base de la malla colocada con esa matriz.</summary>
+    static float MaximoFlotando(Mesh m, Matrix4x4 m4)
+    {
+        float peor = 0f;
+        foreach (var p in Suela(m))
+        {
+            var w = m4.MultiplyPoint3x4(p);
+            peor = Mathf.Max(peor, w.y - ZonaJuego.Altura(w.x, w.z));
+        }
+        return peor;
     }
 
     static Vector3 NormalSuelo(float x, float z)

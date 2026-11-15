@@ -84,7 +84,8 @@ public static class CabinaBuilder
 
         Despejar(raiz.transform, centro, log);
         ColocarJugador(raiz.transform, log);
-        ColocarBaterias(log);
+        // las pilas de las reinas ya no estan tiradas en sus camaras: las sueltan al morir (Campana, misiones en orden)
+        QuitarBateriasViejas(log);
         RegistrarIcono();
 
         EditorSceneManager.MarkSceneDirty(raiz.scene);
@@ -330,6 +331,16 @@ public static class CabinaBuilder
         log.AppendLine("jugador en " + pos + " yaw " + yaw.ToString("0"));
     }
 
+    static void QuitarBateriasViejas(System.Text.StringBuilder log)
+    {
+        foreach (var n in new[] { "BATERIA_Hormiguero", "BATERIA_Colmena" })
+        {
+            var g = GameObject.Find(n);
+            if (g != null) { Undo.DestroyObjectImmediate(g); log.AppendLine("quitada " + n); }
+        }
+    }
+
+    [System.Obsolete("Las reinas sueltan su pila al morir (Campana)")]
     static void ColocarBaterias(System.Text.StringBuilder log)
     {
         // 1) camara de la Reina Hormiga: al pie del hongo gigante, detras de ella

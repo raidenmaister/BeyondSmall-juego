@@ -13,7 +13,7 @@ public class Aviso : MonoBehaviour
     float t, duracion;
 
     static Aviso actual;
-    static readonly Queue<(string m, Color c, float s)> cola = new Queue<(string, Color, float)>();
+    static readonly Queue<(string m, Color c, float s, float cuando)> cola = new Queue<(string, Color, float, float)>();
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     static void Reiniciar() { actual = null; cola.Clear(); }
@@ -25,7 +25,7 @@ public class Aviso : MonoBehaviour
             // el mismo mensaje dos veces seguidas no se repite
             foreach (var x in cola) if (x.m == mensaje) return;
             if (actual.texto != null && actual.mensaje == mensaje) return;
-            if (cola.Count < 6) cola.Enqueue((mensaje, color, segundos));
+            if (cola.Count < 6) cola.Enqueue((mensaje, color, segundos, Time.unscaledTime));
             // el que esta en pantalla se da prisa
             actual.duracion = Mathf.Min(actual.duracion, Mathf.Max(actual.t + 0.9f, 1.6f));
             return;
@@ -74,6 +74,13 @@ public class Aviso : MonoBehaviour
     {
         if (actual != this) return;
         actual = null;
-        if (cola.Count > 0) { var x = cola.Dequeue(); Crear(x.m, x.c, x.s); }
+        // los que llevan demasiado esperando ya no vienen a cuento (fuera de contexto)
+        while (cola.Count > 0)
+        {
+            var x = cola.Dequeue();
+            if (Time.unscaledTime - x.cuando > 6f) continue;
+            Crear(x.m, x.c, x.s);
+            break;
+        }
     }
 }

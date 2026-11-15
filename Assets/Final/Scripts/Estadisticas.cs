@@ -28,6 +28,8 @@ public class Estadisticas
     public List<string> fusionados = new List<string>();   // objetos distintos creados en el inventario
     public List<string> materiales = new List<string>();   // materiales distintos que han pasado por la mochila
     public bool completadaFinal;
+    public int faseFinal;                                  // 0 historia, 1 cuenta atras, 2 hecatombe, 3 victoria (Campana)
+    public float restanteFinal;
     public string armaEquipada = "";                       // para volver a empuñarla al cargar
 
     [System.Serializable] public class Conteo { public string tipo; public int n; }

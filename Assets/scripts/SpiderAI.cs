@@ -171,6 +171,7 @@ public class SpiderAI : MonoBehaviour
                     attackTimer = attackInterval;
                     currentAnim = ""; // fuerza reinicio de la animación de ataque
                     Play("Attack");
+                    ModeloVivo.AtacarEn(this);
                     if (playerHealth != null) playerHealth.TakeDamage(attackDamage);
                 }
                 break;

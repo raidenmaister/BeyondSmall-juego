@@ -11,8 +11,8 @@ Shader "Exterior/Follaje"
         _VelocidadViento("Velocidad del viento", Float) = 1.2
         _Translucidez("Translucidez", Range(0,1)) = 0.35
         _VariacionColor("Variacion de color", Range(0,0.6)) = 0.2
-        _FadeInicio("Desvanecer cerca de la camara: inicio", Float) = 1.2
-        _FadeFin("Desvanecer cerca de la camara: fin", Float) = 4.0
+        _FadeInicio("Desvanecer cerca de la camara: inicio", Float) = 0.7
+        _FadeFin("Desvanecer cerca de la camara: fin", Float) = 2.2
         [Toggle(_ALPHATEST_ON)] _AlphaClip("Recorte alpha activo", Float) = 1
     }
 

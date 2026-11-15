@@ -173,7 +173,7 @@ public class PlayerController : MonoBehaviour
             if (isCrouching) currentSpeed = crouchSpeed;
             else if (isRunning) currentSpeed = runSpeed;
             if (Planeando) currentSpeed = Mathf.Max(currentSpeed, runSpeed * 1.15f);   // al planear se avanza
-            currentSpeed *= StatusEffects.SpeedMultiplier;
+            currentSpeed *= StatusEffects.SpeedMultiplier * Pociones.MultVelocidad;
 
             float targetAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg + cameraTransform.eulerAngles.y;
             float angle = Mathf.SmoothDampAngle(transform.eulerAngles.y, targetAngle, ref turnSmoothVelocity, turnSmoothTime);
@@ -497,7 +497,7 @@ public class PlayerController : MonoBehaviour
     {
         var arma = Armas.Equipada;
         float baseDanio = arma != null ? arma.danio : attackDamage;
-        float danio = baseDanio * (golpeCargado ? heavyDamageMultiplier : 1f) * Mejoras.MultDanio;
+        float danio = baseDanio * (golpeCargado ? heavyDamageMultiplier : 1f) * Mejoras.MultDanio * Pociones.MultDanio;
         float hecho;
         if (arma != null && arma.rompeCorazas && ratHealth.DamageFilter != null)
         {

@@ -46,7 +46,7 @@ public class PlayerStamina : MonoBehaviour
         // Regeneración gradual y lenta de stamina tras el tiempo de retardo
         if (Time.time - lastConsumeTime >= regenDelay && currentStamina < maxStamina)
         {
-            currentStamina = Mathf.Min(maxStamina, currentStamina + regenRate * Time.deltaTime);
+            currentStamina = Mathf.Min(maxStamina, currentStamina + regenRate * Pociones.MultEnergia * Time.deltaTime);
             UpdateUI(immediate: false);
             OnStaminaChanged?.Invoke(currentStamina, maxStamina);
         }

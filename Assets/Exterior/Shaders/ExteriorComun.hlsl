@@ -43,18 +43,37 @@ half3 NieblaEscalada(half3 color, float distancia, float escala)
 #endif
 }
 
-// Tramado 4x4: las plantas pegadas a la camara se desvanecen para no tapar al jugador.
-float Bayer4(float2 pixel)
+// Las plantas pegadas a la camara se desvanecen para no tapar al jugador.
+// Antes era un tramado Bayer 4x4: se veia una rejilla de puntos gruesa ("texturas empalmadas"). Ahora es ruido de
+// gradiente entrelazado (Jimenez 2014): grano fino sin patron que se repita, y la franja de fundido es corta.
+float RuidoIGN(float2 pixel)
 {
-    uint2 q = uint2(pixel) % 4;
-    const float m[16] = { 0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5 };
-    return (m[q.y * 4 + q.x] + 0.5) / 16.0;
+    return frac(52.9829189 * frac(dot(pixel, float2(0.06711056, 0.00583715))));
 }
+
+// Pecho del jugador (xyz) y w = 1 si hay jugador. Lo pone FollajeJugador.cs cada cuadro.
+float4 _BS_Jugador;
 
 void DesvanecerCercaCamara(float3 posWS, float4 posCS, float inicio, float fin)
 {
-    float d = distance(posWS, _WorldSpaceCameraPos);
-    clip(saturate((d - inicio) / max(fin - inicio, 0.01)) - Bayer4(posCS.xy));
+    float3 cam = _WorldSpaceCameraPos;
+    float d = distance(posWS, cam);
+    float k;
+    if (_BS_Jugador.w > 0.5)
+    {
+        // solo desaparece lo que TAPA al jugador: un tunel entre la camara y su pecho (mas ancho cerca de el).
+        // El resto de plantas cercanas queda solido y nitido (antes todo lo cercano salia tramado).
+        float3 ab = _BS_Jugador.xyz - cam;
+        float t = saturate(dot(posWS - cam, ab) / max(dot(ab, ab), 1e-4));
+        float r = distance(posWS, cam + ab * t);
+        float radio = lerp(0.45, 1.0, t);
+        float tubo = smoothstep(radio, radio + 0.2, r);
+        tubo = max(tubo, step(0.96, t));                        // lo que esta detras del jugador no estorba
+        k = min(tubo, smoothstep(inicio * 0.55, inicio * 0.75, d));   // y una hoja pegada a la lente tampoco se dibuja
+    }
+    else k = smoothstep(inicio, max(fin, inicio + 0.01), d);   // sin jugador (menu, fotos): como antes
+    if (k >= 0.999) return;                    // lo normal: nada que recortar
+    clip(k - RuidoIGN(floor(posCS.xy)) * 0.98 - 0.01);
 }
 
 half4 EmpaquetarNormalDepthNormals(float3 normalWS)

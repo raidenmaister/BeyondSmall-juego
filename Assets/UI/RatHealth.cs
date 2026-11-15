@@ -19,6 +19,8 @@ public class RatHealth : MonoBehaviour
     public static System.Action<RatHealth> AlguienMurio;
     /// <summary>Permite a la IA reducir o anular el daño (armadura, enterrada...).</summary>
     public System.Func<float, float> DamageFilter;
+    /// <summary>Inmunidad global (Campana: jefes sellados hasta que llegue su mision). Ni las tenazas la atraviesan.</summary>
+    public static System.Func<RatHealth, bool> Inmune;
 
     private void Awake()
     {
@@ -29,6 +31,7 @@ public class RatHealth : MonoBehaviour
     public float TakeDamage(float amount)
     {
         if (IsDead || amount <= 0f) return 0f;
+        if (Inmune != null && Inmune(this)) return 0f;
         if (DamageFilter != null) amount = DamageFilter(amount);
         if (amount <= 0f) return 0f;
 

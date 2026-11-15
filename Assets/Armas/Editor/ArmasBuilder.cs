@@ -25,6 +25,7 @@ public static class ArmasBuilder
     {
         ("Lapiz", "Pedazo de lapiz", 4),
         ("Navaja", "Navaja de sacapuntas", 4),
+        ("Tapon", "Tapon de botella", 8),
     };
 
     [MenuItem("Herramientas/Armas/Construir")]
@@ -75,7 +76,8 @@ public static class ArmasBuilder
     // ------------------------------------------------------------------ 2. iconos
     static void CrearIconos(StringBuilder log)
     {
-        var ids = new List<string> { "Lapiz", "Navaja", "Venda" };
+        var ids = new List<string> { "Lapiz", "Navaja", "Venda", "Tapon" };
+        foreach (var p in Pociones.Todas) ids.Add(p.id);
         foreach (var a in Armas.Todas) ids.Add(a.id);
         // el primer render de PreviewRenderUtility sale sin materiales listos: uno de calentamiento
         var calentar = ModelosArmas.Crear("Lanza");
@@ -86,7 +88,7 @@ public static class ArmasBuilder
             var go = ModelosArmas.Crear(id);
             if (go == null) { log.AppendLine("sin modelo " + id); continue; }
             // en diagonal, como los iconos dibujados del inventario
-            go.transform.rotation = Quaternion.Euler(0, 0, id == "Navaja" || id == "Venda" ? -20f : -42f);
+            go.transform.rotation = id == "Tapon" || id.StartsWith("Pocion") ? Quaternion.Euler(-55f, 0f, 0f) : Quaternion.Euler(0, 0, id == "Navaja" || id == "Venda" ? -20f : -42f);
             var tex = RenderIcono(go, 256);
             Object.DestroyImmediate(go);
             string ruta = Iconos + "/" + id + ".png";

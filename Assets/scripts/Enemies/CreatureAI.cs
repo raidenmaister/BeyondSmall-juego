@@ -174,6 +174,8 @@ public class CreatureAI : MonoBehaviour
         m.color = new Color(0.25f, 0.17f, 0.1f);
         if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", m.color);
         mound.GetComponent<Renderer>().sharedMaterial = m;
+        var tierra = VestirBichos.MaterialTierra();   // tierra del propio suelo, no plastico
+        if (tierra != null) { mound.GetComponent<Renderer>().sharedMaterial = tierra; mound.GetComponent<Renderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; }
         state = S.Burrowed;
         SetSink(-1.6f);
     }

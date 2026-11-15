@@ -30,7 +30,7 @@ public class CreditosFinal : MonoBehaviour
     {
         { "01_Ladrona", "¡Devuelve eso!" },
         { "02_Siesta", "Cinco minutitos mas..." },
-        { "03_Futbol", "Hormigas F.C. contra la Cochinilla" },
+        { "03_Futbol", "Hormigas F.C.: final de la Copa Piedrita" },
         { "04_Corona", "Su majestad no sabia que estaba ahi" },
         { "05_Antorcha", "Yo tambien quiero ver de noche" },
         { "06_Carrera", "Nadie sabe quien empezo" },
@@ -263,11 +263,26 @@ public class CreditosFinal : MonoBehaviour
         Item_("Modelo e ilustracion del protagonista: Paradox Pixel");
         Peque("Esqueleto y animaciones: Mixamo (Adobe)  ·  mixamo.com");
         Seccion("LOS BICHOS");
-        Item_("Hormiga, Oruga, Lombriz, Ciempies, Escarabajo y Mariposa");
-        Peque("Poly by Google (CC-BY 3.0)  ·  poly.pizza");
-        Item_("Abeja");
-        Peque("Quaternius (CC0)  ·  poly.pizza/m/6HsU6GQt3a");
-        Peque("Cochinilla, reinas, larvas y objetos que sueltan: hechos por codigo para el juego");
+        Peque("Modelos 3D de Sketchfab  ·  Creative Commons Atribucion 4.0 (CC BY 4.0)");
+        Espacio(8);
+        Item_("Hormigas: \"ANT\" por MAXDESIGN");
+        Item_("Reina Hormiga: \"Game-Ready Queen ant Model\" por LilCick");
+        Item_("Abejas y Reina Abeja: \"Bee\" por hellonintendo8");
+        Item_("Ratas y Rey Rata: \"Black Rat\" por Nestaeric");
+        Item_("Escarabajo: \"A Rhino beetle\" por aaadragon");
+        Item_("Oruga: \"Horned Devil Caterpillar\" por chaitanyak");
+        Item_("Mariposa: \"BUTTERFLY\" por rukh3d");
+        Item_("Ciempies: \"Centipede\" por dartuchiwa");
+        Item_("Arana: \"Animated Spider\" por shadocks");
+        Item_("Cochinilla: \"Woodlouse\" por .hapto");
+        Item_("Bolita: \"Hamster Walk\" por Lada.Repina");
+        Item_("Lombrices: \"Earth_ Worm\" por mj.artsi");
+        Item_("Larvas de la colmena: \"Larva\" por malle87");
+        Peque("sketchfab.com  ·  enlaces completos en Assets/Modelos/CREDITOS.txt");
+        Espacio(8);
+        Item_("Bichos de las fotos de recuerdo");
+        Peque("Poly by Google (CC-BY 3.0)  ·  poly.pizza   ·   Abeja: Quaternius (CC0)");
+        Peque("Objetos que sueltan los bichos: hechos por codigo para el juego");
         Seccion("EL MUNDO");
         Item_("Plantas, rocas, troncos, muebles y texturas");
         Peque("Poly Haven (CC0)  ·  polyhaven.com");
@@ -285,6 +300,8 @@ public class CreditosFinal : MonoBehaviour
         Seccion("TIPOGRAFIA");
         Item_("Barlow y Barlow Condensed");
         Peque("Jeremy Tribby (SIL Open Font License)  ·  github.com/jpt/barlow");
+        Item_("Patrick Hand y Permanent Marker");
+        Peque("Patrick Wagesreiter (SIL OFL)  ·  Font Diner (Apache 2.0)  ·  Google Fonts");
         Seccion("TECNOLOGIAS");
         Item_("Unity 6  ·  Universal Render Pipeline  ·  Cinemachine");
         Item_("TextMesh Pro  ·  AI Navigation  ·  Shader Graph / HLSL");

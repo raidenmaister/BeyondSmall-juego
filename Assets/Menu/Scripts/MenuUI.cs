@@ -548,15 +548,22 @@ public class MenuUI : MonoBehaviour
         var t = Texto("Texto", p.contenido,
             "<size=130%><b>BEYOND SMALL</b></size>\n<color=#9fb>Despiertas diminuto en un salon abandonado. ¿Que fue esa maquina?</color>\n\n" +
             "<color=#46dcc8>DESARROLLO</color>\nEquipo de Beyond Small — proyecto de Graficacion\n\n" +
-            "<color=#46dcc8>MODELOS Y TEXTURAS</color>\nPoly Haven (CC0): plantas, rocas, troncos, texturas de suelo y tierra\n\n" +
+            "<color=#46dcc8>MODELOS Y TEXTURAS</color>\nPoly Haven (CC0): plantas, rocas, troncos, texturas de suelo y tierra\nSketchfab (CC BY 4.0): hormigas, reina, abejas, ratas, escarabajo, oruga, mariposa, ciempies, arana, cochinilla, lombriz, larvas y Bolita — autores en los creditos finales\nPoly by Google (CC-BY 3.0) y Quaternius (CC0): los bichos de las fotos de recuerdo\n\n" +
             "<color=#46dcc8>SONIDOS</color>\nFreesound.org (CC0): animales, pasos, golpes, ambiente, cueva, maquina\n\n" +
-            "<color=#46dcc8>TIPOGRAFIA</color>\nBarlow, por Jeremy Tribby (SIL Open Font License)\n\n" +
+            "<color=#46dcc8>TIPOGRAFIA</color>\nBarlow, por Jeremy Tribby (SIL OFL) · Patrick Hand (SIL OFL) · Permanent Marker (Apache 2.0)\n\n" +
             "<color=#46dcc8>MOTOR</color>\nUnity 6 · Universal Render Pipeline · Cinemachine",
             26, TextAlignmentOptions.Top, recursos.fuenteTexto);
-        var r = t.rectTransform; r.anchorMin = new Vector2(0, 0); r.anchorMax = new Vector2(1, 1); r.offsetMin = new Vector2(40, 80); r.offsetMax = new Vector2(-40, -20);
+        // el texto y el boton van sobre la vista entera del panel: "Contenido" solo mide lo que una fila
+        // (antes el texto quedaba con alto negativo y se salia, y "Volver" con ancho negativo salia en vertical)
+        var vista = (RectTransform)p.contenido.parent;
+        var r = t.rectTransform; r.SetParent(vista, false);
+        r.anchorMin = new Vector2(0, 0); r.anchorMax = new Vector2(1, 1); r.offsetMin = new Vector2(0, 70); r.offsetMax = new Vector2(0, 0);
+        t.enableAutoSizing = true; t.fontSizeMin = 15; t.fontSizeMax = 26;
         t.color = new Color(0.88f, 0.9f, 0.9f);
         // el boton "Volver" va al fondo del panel
-        var f = p.filas[0]; f.rt.anchorMin = f.rt.anchorMax = new Vector2(0.5f, 0); f.rt.pivot = new Vector2(0.5f, 0); f.rt.anchoredPosition = new Vector2(0, 10);
+        var f = p.filas[0]; f.rt.SetParent(vista, false);
+        f.rt.anchorMin = f.rt.anchorMax = new Vector2(0.5f, 0); f.rt.pivot = new Vector2(0.5f, 0);
+        f.rt.sizeDelta = new Vector2(320f, f.rt.sizeDelta.y); f.rt.anchoredPosition = new Vector2(0, 8);
         Empujar(p);
     }
 

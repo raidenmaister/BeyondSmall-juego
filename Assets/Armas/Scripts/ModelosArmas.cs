@@ -55,6 +55,13 @@ public static class ModelosArmas
         {
             case "Lapiz": LapizCorto(raiz.transform, 0f, 0.9f); break;
             case "Navaja": Navaja(raiz.transform, new Vector3(0f, 0.12f, 0f), Quaternion.identity, 1f); break;
+            case "Tapon":
+                Tapon(raiz.transform, null);
+                break;
+            case "PocionVida": Tapon(raiz.transform, new Color(1f, 0.25f, 0.3f)); break;
+            case "PocionFuerza": Tapon(raiz.transform, new Color(1f, 0.55f, 0.1f)); break;
+            case "PocionCaparazon": Tapon(raiz.transform, new Color(0.3f, 0.5f, 1f)); break;
+            case "PocionRapidez": Tapon(raiz.transform, new Color(0.35f, 1f, 0.4f)); break;
             case "Venda":
                 Pieza(raiz, Tubo(0.16f, 0.05f, 16, 0.22f), Tela, Vector3.up * 0.11f, Quaternion.identity);
                 Pieza(raiz, Cilindro(0.06f, 0.2f, 12), Liga, Vector3.up * 0.11f, Quaternion.Euler(0, 0, 90));
@@ -157,6 +164,27 @@ public static class ModelosArmas
         Pieza(padre.gameObject, Prisma(6, 0.06f, largo), Amarillo, Vector3.up * y0, Quaternion.identity);
         Pieza(padre.gameObject, Cono(0.06f, 0.18f, 12), Madera, Vector3.up * (y0 + largo), Quaternion.identity);
         Pieza(padre.gameObject, Cono(0.022f, 0.065f, 8), Grafito, Vector3.up * (y0 + largo + 0.115f), Quaternion.identity);
+    }
+
+    /// <summary>Tapon de botella (corona dentada); con color = lleno de pocion que brilla.</summary>
+    static void Tapon(Transform padre, Color? liquido)
+    {
+        var rojo = Mat("TaponRojo", new Color(0.85f, 0.12f, 0.1f), 0.75f, 0.6f);
+        Pieza(padre.gameObject, Cilindro(0.2f, 0.05f, 24), rojo, Vector3.zero, Quaternion.identity);                 // tapa
+        Pieza(padre.gameObject, Tubo(0.2f, 0.025f, 21, 0.1f), rojo, Vector3.up * 0.07f, Quaternion.identity);       // borde dentado
+        for (int i = 0; i < 21; i++)
+        {
+            float a = i * 360f / 21f;
+            Pieza(padre.gameObject, Caja(new Vector3(0.05f, 0.1f, 0.03f)), rojo, Quaternion.Euler(0, a, 0) * new Vector3(0f, 0.03f, 0.205f), Quaternion.Euler(0, a, 0));
+        }
+        if (liquido.HasValue)
+        {
+            var c = liquido.Value;
+            var m = Mat("Pocion_" + ColorUtility.ToHtmlStringRGB(c), c, 0.6f, 0f, c * 0.35f);
+            Pieza(padre.gameObject, Cilindro(0.17f, 0.06f, 20), m, Vector3.up * 0.04f, Quaternion.identity);
+            // burbuja encima
+            Pieza(padre.gameObject, Cono(0.05f, 0.08f, 10), m, new Vector3(0.05f, 0.1f, 0.03f), Quaternion.Euler(180, 0, 0));
+        }
     }
 
     static void Navaja(Transform padre, Vector3 pos, Quaternion rot, float k)

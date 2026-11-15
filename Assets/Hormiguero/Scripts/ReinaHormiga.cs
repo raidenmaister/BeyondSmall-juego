@@ -70,6 +70,7 @@ public class ReinaHormiga : MonoBehaviour
     void Despertar()
     {
         if (estado != Estado.Dormida) return;
+        if (Campana.Sellado(vida)) { Campana.AvisarSellado(vida); return; }   // aun no es su turno en la historia
         estado = Estado.Pelea;
         Sonar(rugido, 1f);
         if (Hormiguero.Instancia != null) Hormiguero.Instancia.Alarma(hogar, radioCorrea + 30f);
@@ -144,6 +145,7 @@ public class ReinaHormiga : MonoBehaviour
         Vector3 f = transform.forward;
         for (float t = 0f; t < 0.18f; t += Time.deltaTime) { pitch = Mathf.Lerp(16f, -14f, t / 0.18f); transform.position += f * 9f * Time.deltaTime; yield return null; }
         Vector3 hacia = jugador.position - transform.position; hacia.y = 0f;
+        ModeloVivo.AtacarEn(this);
         if (hacia.magnitude < alcanceMordida + 1.5f && Vector3.Angle(transform.forward, hacia) < 70f && vidaJugador != null)
             vidaJugador.TakeDamage(danioMordida);
         for (float t = 0f; t < 0.35f; t += Time.deltaTime) { pitch = Mathf.Lerp(-14f, 0f, t / 0.35f); yield return null; }

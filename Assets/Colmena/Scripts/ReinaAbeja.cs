@@ -65,6 +65,7 @@ public class ReinaAbeja : MonoBehaviour
     void Despertar()
     {
         if (estado != Estado.Dormida) return;
+        if (Campana.Sellado(vida)) { Campana.AvisarSellado(vida); return; }   // aun no es su turno en la historia
         estado = Estado.Pelea;
         Sonar(chillido, 1f);
         if (Colmena.Instancia != null) Colmena.Instancia.Alarma(centroCamara, radioCamara + 25f);

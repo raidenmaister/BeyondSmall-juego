@@ -427,7 +427,21 @@ public static class HamsterBuilder
 
     static Material PlasticoDe(Color c)
     {
-        if (!plasticos.TryGetValue(c, out var m)) { m = Plastico("Tubo_" + ColorUtility.ToHtmlStringRGB(c), c, 0.26f); plasticos[c] = m; }
+        if (!plasticos.TryGetValue(c, out var m))
+        {
+            m = Plastico("Tubo_" + ColorUtility.ToHtmlStringRGB(c), c, 0.26f);
+            // plastico de tubo de verdad: transparente de frente y opaco de canto (se lee la forma redonda)
+            var sh = Shader.Find("Hamster/PlasticoTubo");
+            if (sh != null)
+            {
+                m.shader = sh;
+                m.SetColor("_BaseColor", new Color(c.r, c.g, c.b, 1f));
+                m.SetFloat("_Claro", 0.12f); m.SetFloat("_Canto", 0.82f); m.SetFloat("_Brillo", 1.6f); m.SetFloat("_Lechoso", 0.15f);
+                m.renderQueue = 3000;
+                EditorUtility.SetDirty(m);
+            }
+            plasticos[c] = m;
+        }
         return m;
     }
 
@@ -926,7 +940,7 @@ public static class HamsterBuilder
         Pieza("OjoI", bai, Guardar(Bola("OjoMini", 0.12f, Vector3.one), "OjoMini"), mOjo, bai.position + new Vector3(-0.3f, 1.75f, 0.68f), Quaternion.identity, false);
         Pieza("OjoD", bai, Guardar(Bola("OjoMini", 0.12f, Vector3.one), "OjoMini"), mOjo, bai.position + new Vector3(0.3f, 1.75f, 0.68f), Quaternion.identity, false);
         // manivela al costado (gira cuando suena)
-        var man = new GameObject("Manivela").transform; man.SetParent(go.transform, false); man.position = c + new Vector3(3.2f, 2.6f, 0f);
+        var man = new GameObject("Manivela").transform; man.SetParent(go.transform, false); man.position = c + new Vector3(2.75f, 2.6f, 0f);   // el eje sale del costado de la caja (antes quedaba a 20 cm, flotando)
         Pieza("Eje", man, Guardar(Caja("EjeManivela", new Vector3(0.6f, 0.3f, 0.3f)), "EjeManivela"), mDorado, man.position + Vector3.right * 0.3f, Quaternion.identity, false);
         Pieza("Brazo", man, Guardar(Caja("BrazoManivela", new Vector3(0.25f, 1.8f, 0.3f)), "BrazoManivela"), mDorado, man.position + new Vector3(0.6f, 0.8f, 0f), Quaternion.identity, false);
         Pieza("Mango", man, Guardar(Cilindro("MangoManivela", 0.25f, 0.9f, 10), "MangoManivela"), mRojo, man.position + new Vector3(0.6f, 1.6f, 0f), Quaternion.Euler(0f, 0f, -90f), false);
@@ -1027,7 +1041,7 @@ public static class HamsterBuilder
         // patas en A
         foreach (float sx in new[] { -1f, 1f })
         {
-            Vector3 pie = new Vector3(ejeR.x + sx * 3.4f, Mesa + 0.45f, ejeR.z - ancho * 0.5f - 0.4f);
+            Vector3 pie = new Vector3(ejeR.x + sx * 3.4f, Mesa - 0.05f, ejeR.z - ancho * 0.5f - 0.4f);   // apoyada en la mesa (antes empezaba 45 cm por encima)
             Vector3 d = ejeR + Vector3.back * (ancho * 0.5f + 0.4f) - pie;
             Pieza("Pata", rg.transform, Guardar(Caja("PataRueda", new Vector3(0.3f, d.magnitude, 0.3f)), "PataRueda"), mMetal, pie + d * 0.5f, Quaternion.FromToRotation(Vector3.up, d), false);
         }
@@ -1193,16 +1207,17 @@ public static class HamsterBuilder
     {
         var go = new GameObject("CajaPanuelos"); go.transform.SetParent(p, false);
         float x0 = 56f, x1 = 72f, z0 = -95f, z1 = -79f, y0 = Mesa, y1 = 25f, e = 0.5f;
-        // paredes (la del frente tiene la salida del tobogan)
-        Bloque("Atras", go.transform, new Vector3(x0, y0, z0), new Vector3(x1, y1, z0 + e), mPanuelos);
-        Bloque("Izq", go.transform, new Vector3(x0, y0, z0), new Vector3(x0 + e, y1, z1), mPanuelos);
-        Bloque("Der", go.transform, new Vector3(x1 - e, y0, z0), new Vector3(x1, y1, z1), mPanuelos);
-        float hx0 = 61.8f, hx1 = 64.6f, hy = Mesa + 3.5f;
-        Bloque("FrenteA", go.transform, new Vector3(x0, y0, z1 - e), new Vector3(hx0, y1, z1), mPanuelos);
-        Bloque("FrenteB", go.transform, new Vector3(hx1, y0, z1 - e), new Vector3(x1, y1, z1), mPanuelos);
-        Bloque("FrenteC", go.transform, new Vector3(hx0, hy, z1 - e), new Vector3(hx1, y1, z1), mPanuelos);
-        // tapa con el hueco de la trampilla (dentro de la casita)
+        // paredes (la del frente tiene la salida del tobogan). Sin solapes: atras y frente de lado a lado, los
+        // laterales solo entre ellas, y todas hasta donde empieza la tapa (antes se pisaban y parpadeaban)
         float tx0 = 61.6f, tx1 = 64.8f, tz0 = -90.6f, tz1 = -87.4f, ty = y1 - 0.4f;
+        Bloque("Atras", go.transform, new Vector3(x0, y0, z0), new Vector3(x1, ty, z0 + e), mPanuelos);
+        Bloque("Izq", go.transform, new Vector3(x0, y0, z0 + e), new Vector3(x0 + e, ty, z1 - e), mPanuelos);
+        Bloque("Der", go.transform, new Vector3(x1 - e, y0, z0 + e), new Vector3(x1, ty, z1 - e), mPanuelos);
+        float hx0 = 61.8f, hx1 = 64.6f, hy = Mesa + 3.5f;
+        Bloque("FrenteA", go.transform, new Vector3(x0, y0, z1 - e), new Vector3(hx0, ty, z1), mPanuelos);
+        Bloque("FrenteB", go.transform, new Vector3(hx1, y0, z1 - e), new Vector3(x1, ty, z1), mPanuelos);
+        Bloque("FrenteC", go.transform, new Vector3(hx0, hy, z1 - e), new Vector3(hx1, ty, z1), mPanuelos);
+        // tapa con el hueco de la trampilla (dentro de la casita)
         Bloque("TapaA", go.transform, new Vector3(x0, ty, z0), new Vector3(x1, y1, tz0), mPanuelos);
         Bloque("TapaB", go.transform, new Vector3(x0, ty, tz1), new Vector3(x1, y1, z1), mPanuelos);
         Bloque("TapaC", go.transform, new Vector3(x0, ty, tz0), new Vector3(tx0, y1, tz1), mPanuelos);

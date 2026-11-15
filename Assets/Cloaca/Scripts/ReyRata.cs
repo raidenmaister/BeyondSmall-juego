@@ -118,6 +118,7 @@ public class ReyRata : MonoBehaviour
     void Despertar()
     {
         if (estado != Estado.Dormido) return;
+        if (Campana.Sellado(vida)) { Campana.AvisarSellado(vida); return; }   // aun no es su turno en la historia
         estado = Estado.Pelea;
         Sonar(rugido, 1f, 0.7f);
         Aviso.Mostrar("¡El Rey Rata desperto!", new Color(1f, 0.45f, 0.3f));
@@ -237,6 +238,7 @@ public class ReyRata : MonoBehaviour
         Vector3 hacia = jugador.position - transform.position; hacia.y = 0f;
         if (hacia.magnitude < alcanceMordisco + 2f && Vector3.Angle(transform.forward, hacia) < 70f && vidaJugador != null)
         {
+            ModeloVivo.AtacarEn(this);
             vidaJugador.TakeDamage(danioMordisco);
             Empujar(transform.position, 10f);
         }

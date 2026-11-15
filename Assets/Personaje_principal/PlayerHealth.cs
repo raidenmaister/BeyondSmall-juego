@@ -62,6 +62,7 @@ public class PlayerHealth : MonoBehaviour
         if (!Partida.Agresivos) return;
         if (bloqueable && Time.time < invulnerableHasta) return;
         if (bloqueable && Escudo.Instancia != null) amount = Escudo.Instancia.Filtrar(amount);
+        amount *= Pociones.MultRecibido;   // pocion de caparazon
         DanioEntorno(amount);
         if (bloqueable && amount >= 1f && !IsDead)
         {
